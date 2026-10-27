@@ -1,0 +1,19 @@
+import { NextFunction, Request, Response } from "express";
+import { IResponse } from "../common/interface";
+
+export const responceFormatter = (handler: Function) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+    const {
+      status = 200,
+      message = true,
+      data = undefined,
+      extra = undefined,
+    }: IResponse = (await handler(req, res, next)) || {};
+
+    if (res.headersSent) {
+      return;
+    }
+
+    return res.status(status).json({ message, status, data, extra });
+  };
+};
