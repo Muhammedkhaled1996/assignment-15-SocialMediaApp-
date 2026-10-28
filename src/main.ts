@@ -1,8 +1,12 @@
 import express from "express";
 import { authenticationController } from "./modules";
 import { globalErrorHandling } from "./middleware";
+import { PORT } from "./config";
+import { bootstrapDB } from "./DB/connections";
 
 const app: express.Application = express();
+
+bootstrapDB(app, PORT);
 
 app.use(express.json());
 
@@ -14,7 +18,3 @@ app.all("/", async (req: express.Request, res: express.Response, next: express.N
 app.use("/auth", authenticationController);
 
 app.use(globalErrorHandling);
-
-app.listen(3000, () => {
-  console.log(`server is running in 3000`);
-});

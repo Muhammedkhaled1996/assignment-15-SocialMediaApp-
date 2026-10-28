@@ -6,7 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const modules_1 = require("./modules");
 const middleware_1 = require("./middleware");
+const config_1 = require("./config");
+const connections_1 = require("./DB/connections");
 const app = (0, express_1.default)();
+(0, connections_1.bootstrapDB)(app, config_1.PORT);
 app.use(express_1.default.json());
 app.all("/", async (req, res, next) => {
     res.status(200).json({ message: "Done" });
@@ -14,6 +17,3 @@ app.all("/", async (req, res, next) => {
 });
 app.use("/auth", modules_1.authenticationController);
 app.use(middleware_1.globalErrorHandling);
-app.listen(3000, () => {
-    console.log(`server is running in 3000`);
-});
