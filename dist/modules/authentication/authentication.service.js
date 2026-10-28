@@ -5,9 +5,10 @@ class authenticationService {
     constructor() {
         console.log("IN");
     }
-    signup(data) {
+    signup = (data) => {
+        const { userName, confirmPassword, email, gender, password, phone, privileges } = data;
         return data;
-    }
+    };
 }
 exports.authenticationService = authenticationService;
 exports.default = new authenticationService();

@@ -16,6 +16,8 @@
     "concurrently": "^10.0.6"
   },
   "dependencies": {
-    "express": "^5.3.0"
+    "express": "^5.3.0",
+    "mongoose": "^9.11.4",
+    "zod": "^4.6.7"
   }
 }
