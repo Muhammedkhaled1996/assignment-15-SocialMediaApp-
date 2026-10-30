@@ -19,7 +19,7 @@ const bootstrapDB = async (app, port) => {
         });
     }
     catch (error) {
-        console.log(error);
+        console.log(error, "Error from mongo db connection");
         console.log(`Fail To Connect in DB 😢`);
     }
 };
