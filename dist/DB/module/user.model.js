@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserModel = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const enum_1 = require("../../common/enum");
+const followStatus_enum_1 = require("../../common/enum/followStatus.enum");
 const userSchema = new mongoose_1.default.Schema({
     firstName: { type: String, required: true, minLength: 2, maxLength: 25 },
     lastName: { type: String, required: true, minLength: 2, maxLength: 25 },
@@ -38,6 +39,17 @@ const userSchema = new mongoose_1.default.Schema({
         default: enum_1.providerEnum.SYSTEM,
     },
     changeCredentialsTime: Date,
+    followers: [{
+            id: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "User" },
+            status: { type: Number, enum: followStatus_enum_1.FollowStatus, default: followStatus_enum_1.FollowStatus.PENDING },
+            createdAt: { type: Date, default: Date.now }
+        }],
+    followings: [{
+            id: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "User" },
+            status: { type: Number, enum: followStatus_enum_1.FollowStatus, default: followStatus_enum_1.FollowStatus.PENDING },
+            createdAt: { type: Date, default: Date.now }
+        }],
+    isPrivate: { type: Boolean, default: false }
 }, {
     timestamps: true,
     autoIndex: true,

@@ -1,6 +1,7 @@
 import mongoose, { HydratedDocument } from "mongoose";
 import { GenderEnum, providerEnum, UserRole } from "../../common/enum";
 import { IUser } from "../../common/interface/user.interface";
+import { FollowStatus } from "../../common/enum/followStatus.enum";
 
 const userSchema = new mongoose.Schema<IUser>(
   {
@@ -35,6 +36,17 @@ const userSchema = new mongoose.Schema<IUser>(
       default: providerEnum.SYSTEM,
     },
     changeCredentialsTime: Date,
+    followers: [{
+      id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      status: { type: Number, enum: FollowStatus, default: FollowStatus.PENDING },
+      createdAt: { type: Date, default: Date.now }
+    }],
+    followings: [{
+      id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      status: { type: Number, enum: FollowStatus, default: FollowStatus.PENDING },
+      createdAt: { type: Date, default: Date.now }
+    }],
+    isPrivate: { type: Boolean, default: false }
   },
   {
     timestamps: true,
@@ -61,4 +73,4 @@ userSchema
   });
 
 export const UserModel = mongoose.models.User || mongoose.model<IUser>("User", userSchema);
-export type HUser = HydratedDocument<IUser> 
+export type HUser = HydratedDocument<IUser>;

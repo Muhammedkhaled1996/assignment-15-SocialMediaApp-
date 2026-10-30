@@ -37,4 +37,31 @@ router.patch("/profile-image", (0, authentication_middleware_js_1.authentication
     });
     return { data: updatedUser };
 }));
+router.post("/follow/:id", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
+    await users_services_1.default.followUser(req.user._id.toString(), req.params.id);
+}));
+router.post("/unfollow/:id", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
+    await users_services_1.default.unFollowUser(req.user._id.toString(), req.params.id);
+}));
+router.get("/get-pending-follow-requests", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
+    const data = await users_services_1.default.getPendingFollowRequests(req.user._id.toString());
+    return { data };
+}));
+router.post("/accept-follow-request/:id", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
+    await users_services_1.default.acceptFollowRequest(req.user._id.toString(), req.params.id);
+}));
+router.post("/reject-follow-request/:id", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
+    await users_services_1.default.rejectFollowRequest(req.user._id.toString(), req.params.id);
+}));
+router.post("/toggle-private", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
+    await users_services_1.default.togglePrivate(req.user._id.toString());
+}));
+router.get("/search", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
+    const data = await users_services_1.default.searchUser(req.query.search, req.user._id.toString());
+    return { data };
+}));
+router.get("/suggestions", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
+    const data = await users_services_1.default.suggestions(req.user._id.toString());
+    return { data };
+}));
 exports.default = router;

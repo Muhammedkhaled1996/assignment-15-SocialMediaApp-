@@ -3,12 +3,13 @@ import type { Request, Response, NextFunction } from "express";
 import { authentication } from "../../middleware/authentication.middleware.js";
 import UserService from "./users.services";
 import { responceFormatter } from "../../middleware/responce.middleware.js";
-import { IUser } from "../../common/interface/user.interface.js";
+import { IFollowItem, IUser } from "../../common/interface/user.interface.js";
 import { IResponse } from "../../common/interface/responce.interface.js";
 import { uploadMiddleware } from "../../middleware/multer.middleware.js";
 import { fileValidation, localFileUpload } from "../../common/utils/multer/local.multer.js";
-import { HUser, UserModel } from "../../DB/module/user.model.js";
+import { HUser } from "../../DB/module/user.model.js";
 import { UserRepository } from "../../common/repository/user.repository.js";
+import { IPagination } from "../../common/interface/pagination.interface.js";
 
 const router = Router({ caseSensitive: true, strict: true });
 
@@ -33,26 +34,7 @@ router.patch(
   }),
 );
 
-// // upload profile image
-// router.patch(
-//   "/profile-image",
-//   authentication(),
-//   uploadMiddleware({
-//     isRequired: false,
-//     multerMiddleware: localFileUpload({ maxFileSize: 5 }).array("image"),
-//     customPath: "user",
-//     validation: fileValidation.image,
-//   }),
-
-//   responceFormatter(async (req: Request, res: Response): Promise<IResponse<HUser>> => {
-//     const user = req.user as HUser;
-//     user.image = req.file?.finalPath || req.files?.[0].finalPath;
-
-//     await user.save();
-//     return { data: user };
-//   }),
-// );
-
+// upload profile image
 router.patch(
   "/profile-image",
   authentication(),
@@ -78,6 +60,81 @@ router.patch(
     });
 
     return { data: updatedUser as HUser };
+  }),
+);
+
+// follow user
+router.post(
+  "/follow/:id",
+  authentication(),
+  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    await UserService.followUser(req.user._id!.toString(), req.params.id as string);
+  }),
+);
+
+// unfollow user
+router.post(
+  "/unfollow/:id",
+  authentication(),
+  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    await UserService.unFollowUser(req.user._id!.toString(), req.params.id as string);
+  }),
+);
+
+// get pending follow request
+router.get(
+  "/get-pending-follow-requests",
+  authentication(),
+  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IFollowItem[]>> => {
+    const data = await UserService.getPendingFollowRequests(req.user._id!.toString());
+    return { data };
+  }),
+);
+
+// accept follow request
+router.post(
+  "/accept-follow-request/:id",
+  authentication(),
+  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    await UserService.acceptFollowRequest(req.user._id!.toString(), req.params.id as string);
+  }),
+);
+
+// reject follow request
+router.post(
+  "/reject-follow-request/:id",
+  authentication(),
+  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    await UserService.rejectFollowRequest(req.user._id!.toString(), req.params.id as string);
+  }),
+);
+
+// toggle private
+router.post(
+  "/toggle-private",
+  authentication(),
+  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    await UserService.togglePrivate(req.user._id!.toString());
+  }),
+);
+
+// search user
+router.get(
+  "/search",
+  authentication(),
+  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IPagination<IUser>>> => {
+    const data = await UserService.searchUser(req.query.search as string, req.user._id!.toString());
+    return { data };
+  }),
+);
+
+// suggestions
+router.get(
+  "/suggestions",
+  authentication(),
+  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IPagination<IUser>>> => {
+    const data = await UserService.suggestions(req.user._id!.toString());
+    return { data };
   }),
 );
 
