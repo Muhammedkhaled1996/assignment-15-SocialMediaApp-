@@ -1,5 +1,5 @@
 import express from "express";
-import { authenticationController } from "./modules";
+import { authenticationController, usersController } from "./modules";
 import { globalErrorHandling } from "./middleware";
 import { PORT } from "./config";
 import { bootstrapDB } from "./DB/connections";
@@ -16,5 +16,6 @@ app.all("/", async (req: express.Request, res: express.Response, next: express.N
 });
 
 app.use("/auth", authenticationController);
+app.use("/user", usersController);
 
 app.use(globalErrorHandling);

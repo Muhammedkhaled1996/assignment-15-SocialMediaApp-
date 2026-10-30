@@ -9,31 +9,31 @@ class BadRequestException extends application_exception_1.ApplicationException {
 }
 exports.BadRequestException = BadRequestException;
 class NotFoundException extends application_exception_1.ApplicationException {
-    constructor(message = "BadRequest", cause) {
+    constructor(message = "NotFoundException", cause) {
         super(message, 404, cause);
     }
 }
 exports.NotFoundException = NotFoundException;
 class UnauthorizedException extends application_exception_1.ApplicationException {
-    constructor(message = "BadRequest", cause) {
+    constructor(message = "UnauthorizedException", cause) {
         super(message, 401, cause);
     }
 }
 exports.UnauthorizedException = UnauthorizedException;
 class ForbiddenException extends application_exception_1.ApplicationException {
-    constructor(message = "BadRequest", cause) {
+    constructor(message = "ForbiddenException", cause) {
         super(message, 403, cause);
     }
 }
 exports.ForbiddenException = ForbiddenException;
 class ConflictException extends application_exception_1.ApplicationException {
-    constructor(message = "BadRequest", cause) {
+    constructor(message = "ConflictException", cause) {
         super(message, 409, cause);
     }
 }
 exports.ConflictException = ConflictException;
 class TooManyRequestException extends application_exception_1.ApplicationException {
-    constructor(message = "BadRequest", cause) {
+    constructor(message = "TooManyRequestException", cause) {
         super(message, 429, cause);
     }
 }

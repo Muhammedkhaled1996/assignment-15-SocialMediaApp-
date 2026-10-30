@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GenderEnum = exports.userRole = void 0;
-var userRole;
-(function (userRole) {
-    userRole[userRole["superAdmin"] = 8000] = "superAdmin";
-    userRole[userRole["admin"] = 7000] = "admin";
-    userRole[userRole["user"] = 6000] = "user";
-})(userRole || (exports.userRole = userRole = {}));
+exports.GenderEnum = exports.UserRole = void 0;
+var UserRole;
+(function (UserRole) {
+    UserRole[UserRole["superAdmin"] = 0] = "superAdmin";
+    UserRole[UserRole["admin"] = 1] = "admin";
+    UserRole[UserRole["user"] = 2] = "user";
+})(UserRole || (exports.UserRole = UserRole = {}));
 var GenderEnum;
 (function (GenderEnum) {
     GenderEnum[GenderEnum["MALE"] = 0] = "MALE";

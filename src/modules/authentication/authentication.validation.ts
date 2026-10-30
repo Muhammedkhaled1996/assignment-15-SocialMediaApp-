@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LanguageEnum } from "../../common/enum";
+import { LanguageEnum, UserRole } from "../../common/enum";
 import { generalValidationFields } from "../../common/utils";
 
 export const loginSchema = (lang: LanguageEnum) => {
@@ -26,7 +26,7 @@ export const signup = (lang: LanguageEnum) => {
         confirmPassword: generalValidationFields.confirmPassword(lang),
         phone: generalValidationFields.phone(lang),
         gender: generalValidationFields.gender(lang),
-        privileges: generalValidationFields.privileges(lang).optional(),
+        role: z.enum(UserRole).optional(),
       })
       .superRefine((data, ctx) => {
         generalValidationFields.matchFields({ original: "password", copy: "confirmPassword", data, ctx, lang });

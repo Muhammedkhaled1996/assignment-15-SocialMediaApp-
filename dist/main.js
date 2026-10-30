@@ -16,4 +16,5 @@ app.all("/", async (req, res, next) => {
     return;
 });
 app.use("/auth", modules_1.authenticationController);
+app.use("/user", modules_1.usersController);
 app.use(middleware_1.globalErrorHandling);

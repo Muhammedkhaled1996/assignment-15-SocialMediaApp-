@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resetPassword = exports.resendOtp = exports.confirmEmail = exports.logoutSchema = exports.signup = exports.login = exports.loginSchema = void 0;
 const zod_1 = require("zod");
+const enum_1 = require("../../common/enum");
 const utils_1 = require("../../common/utils");
 const loginSchema = (lang) => {
     return zod_1.z.strictObject({
@@ -27,7 +28,7 @@ const signup = (lang) => {
             confirmPassword: utils_1.generalValidationFields.confirmPassword(lang),
             phone: utils_1.generalValidationFields.phone(lang),
             gender: utils_1.generalValidationFields.gender(lang),
-            privileges: utils_1.generalValidationFields.privileges(lang).optional(),
+            role: zod_1.z.enum(enum_1.UserRole).optional(),
         })
             .superRefine((data, ctx) => {
             utils_1.generalValidationFields.matchFields({ original: "password", copy: "confirmPassword", data, ctx, lang });

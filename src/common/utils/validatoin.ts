@@ -69,8 +69,6 @@ export const generalValidationFields = {
     z.enum(GenderEnum, {
       message: lang == LanguageEnum.AR ? "المسموح بدخالة 0 للذكر و 1 للانثى" : "only valid 0 for male and 1 for female",
     }),
-  privileges: (lang: LanguageEnum) =>
-    z.array(z.string(), { message: lang == LanguageEnum.AR ? "معرف الصلاحية خطا" : "invalid id privilage" }),
   action: (lang: LanguageEnum) =>
     z.enum(LogoutEnum, {
       message:

@@ -1,32 +1,22 @@
-import mongoose from "mongoose";
-import { GenderEnum, providerEnum } from "./../../common/enum/index.js";
+import mongoose, { HydratedDocument } from "mongoose";
+import { GenderEnum, providerEnum, UserRole } from "../../common/enum";
+import { IUser } from "../../common/interface/user.interface";
 
-const privilegeSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  code: { type: Number, required: true, unique: true },
-});
-
-const userSchema = new mongoose.Schema(
+const userSchema = new mongoose.Schema<IUser>(
   {
     firstName: { type: String, required: true, minLength: 2, maxLength: 25 },
     lastName: { type: String, required: true, minLength: 2, maxLength: 25 },
     email: { type: String, required: true, unique: true },
     password: {
       type: String,
-      required: function () {
-        return this.provider == providerEnum.SYSTEM;
-      },
-    },
-    confirmPassword: {
-      type: String,
-      required: function () {
+      required: function (): boolean {
         return this.provider == providerEnum.SYSTEM;
       },
     },
     phone: String,
     gender: {
       type: Number,
-      enum: Object.values(GenderEnum),
+      enum: GenderEnum,
       default: GenderEnum.MALE,
     },
     DOB: Date,
@@ -34,18 +24,17 @@ const userSchema = new mongoose.Schema(
     deletedAt: Date,
     image: String,
     coverImage: [String],
-    privileges: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Privilege",
-      },
-    ],
-    changeCredentialsTime: Date,
+    role: {
+      type: Number,
+      default: UserRole.user,
+      enum: UserRole,
+    },
     provider: {
       type: Number,
-      enum: Object.values(providerEnum),
+      enum: providerEnum,
       default: providerEnum.SYSTEM,
     },
+    changeCredentialsTime: Date,
   },
   {
     timestamps: true,
@@ -61,18 +50,15 @@ userSchema
   .virtual("userName")
   .set(function (value) {
     if (!value || typeof value !== "string") return;
-    const [firstName, ...rest] = value.trim().split(" ");
+    const [firstName, lastName]: string[] = value.trim().split(" ");
     this.set({
       firstName: firstName || this.firstName,
-      lastName: rest.join(" ") || this.lastName || firstName,
+      lastName: lastName || this.lastName,
     });
   })
   .get(function () {
     return `${this.firstName || ""} ${this.lastName || ""}`.trim();
   });
 
-export const UserPrivilege =
-  mongoose.models.Privilege || mongoose.model("Privilege", privilegeSchema);
-
-export const UserModel =
-  mongoose.models.User || mongoose.model("User", userSchema);
+export const UserModel = mongoose.models.User || mongoose.model<IUser>("User", userSchema);
+export type HUser = HydratedDocument<IUser> 

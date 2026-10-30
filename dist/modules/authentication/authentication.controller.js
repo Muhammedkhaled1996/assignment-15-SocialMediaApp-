@@ -40,9 +40,47 @@ const express_1 = require("express");
 const authentication_service_1 = __importDefault(require("./authentication.service"));
 const middleware_1 = require("../../middleware");
 const validators = __importStar(require("./authentication.validation"));
-const router = (0, express_1.Router)();
+const utils_1 = require("../../common/utils");
+const enum_1 = require("../../common/enum");
+const service_1 = require("../../common/service");
+const router = (0, express_1.Router)({ caseSensitive: true, strict: true });
 router.post("/signup", (0, middleware_1.validation)(validators.signup), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.signup(req.validate.body);
+    const data = await authentication_service_1.default.signup(req.validate.body, `${req.protocol}://${req.host}`);
     return { status: 201, data };
+}));
+router.patch("/confirm-email", (0, middleware_1.validation)(validators.confirmEmail), (0, middleware_1.responceFormatter)(async (req, res, next) => {
+    const data = await authentication_service_1.default.confirmEmail(req.validate.body);
+}));
+router.patch("/resend-otp", (0, middleware_1.validation)(validators.resendOtp), (0, middleware_1.responceFormatter)(async (req, res, next) => {
+    const data = await authentication_service_1.default.resendEmail(req.validate.body);
+}));
+const loginLimiter = utils_1.rateLimiterService.generateLimiter({ limit: 5, ttl: 5, skipSuccessfulRequests: true });
+router.post("/login", loginLimiter, (0, middleware_1.validation)(validators.login), (0, middleware_1.responceFormatter)(async (req, res, next) => {
+    const data = await authentication_service_1.default.login(req.validate.body, `${req.protocol}://${req.host}`);
+    if (req.rateLimit?.key)
+        await service_1.cacheService.del({ key: req.rateLimit.key });
+    return { data };
+}));
+router.post("/rotate-token", (0, middleware_1.authentication)(enum_1.TokenEnum.Refresh), (0, middleware_1.responceFormatter)(async (req, res, next) => {
+    const data = await authentication_service_1.default.rotateToken(req.payload, req.user);
+    return { data };
+}));
+router.post("/sigup-with-gmail", (0, middleware_1.responceFormatter)(async (req, res, next) => {
+    const { status, data } = await authentication_service_1.default.siginUpWithGmail(req.body, `${req.protocol}://${req.host}`);
+    return { data, status };
+}));
+router.post("/logout", (0, middleware_1.validation)(validators.logoutSchema), (0, middleware_1.authentication)(), (0, middleware_1.responceFormatter)(async (req, res, next) => {
+    const data = await authentication_service_1.default.logout(req.payload, req.user, req.validate.body);
+}));
+router.post("/requset-forgot-password-code", (0, middleware_1.validation)(validators.resendOtp), (0, middleware_1.responceFormatter)(async (req, res, next) => {
+    const data = await authentication_service_1.default.requestForgetPasswordCode(req.validate.body);
+}));
+router.patch("/verify-forgot-password", (0, middleware_1.validation)(validators.confirmEmail), (0, middleware_1.responceFormatter)(async (req, res, next) => {
+    const data = await authentication_service_1.default.verifyForgotPasswordCode(req.validate.body);
+    return { data };
+}));
+router.patch("/reset-password", (0, middleware_1.validation)(validators.resetPassword), (0, middleware_1.responceFormatter)(async (req, res, next) => {
+    const data = await authentication_service_1.default.resetPasswordCode(req.validate.body);
+    return { data };
 }));
 exports.default = router;

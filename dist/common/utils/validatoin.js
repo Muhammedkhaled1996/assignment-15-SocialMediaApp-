@@ -47,7 +47,6 @@ exports.generalValidationFields = {
     gender: (lang) => zod_1.z.enum(enum_1.GenderEnum, {
         message: lang == enum_1.LanguageEnum.AR ? "المسموح بدخالة 0 للذكر و 1 للانثى" : "only valid 0 for male and 1 for female",
     }),
-    privileges: (lang) => zod_1.z.array(zod_1.z.string(), { message: lang == enum_1.LanguageEnum.AR ? "معرف الصلاحية خطا" : "invalid id privilage" }),
     action: (lang) => zod_1.z.enum(enum_1.LogoutEnum, {
         message: lang == enum_1.LanguageEnum.AR
             ? "يجب تحديد نوع تسجيل الخروج اما 0 لجهاز واحد او 1 كل الاجهزة"
