@@ -11,9 +11,9 @@ export class CacheService {
   async connect() {
     try {
       await this.client.connect();
-      console.log(`Redis Connect Successfully`);
+      console.log(`Redis Connect Successfully 👌`);
     } catch (error) {
-      console.log(`Failed to stablish Redis connection lol`);
+      console.log(`Failed to stablish Redis connection ❌`);
     }
   }
 

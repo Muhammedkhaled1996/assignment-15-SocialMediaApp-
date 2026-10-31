@@ -10,6 +10,8 @@ import { fileValidation, localFileUpload } from "../../common/utils/multer/local
 import { HUser } from "../../DB/module/user.model.js";
 import { UserRepository } from "../../common/repository/user.repository.js";
 import { IPagination } from "../../common/interface/pagination.interface.js";
+import { validation } from "../../middleware/validation.middleware.js";
+import * as validator from "./user.validation.js";
 
 const router = Router({ caseSensitive: true, strict: true });
 
@@ -27,9 +29,9 @@ router.get(
 router.patch(
   "/",
   authentication(),
-
+  validation(validator.update),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IUser>> => {
-    const data = await UserService.update(req.user, req.body);
+    const data = await UserService.update(req.user, req.validate.body);
     return { data };
   }),
 );
@@ -67,8 +69,9 @@ router.patch(
 router.post(
   "/follow/:id",
   authentication(),
+  validation(validator.followUser),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    await UserService.followUser(req.user._id!.toString(), req.params.id as string);
+    await UserService.followUser(req.user._id!.toString(), req.validate.params);
   }),
 );
 
@@ -76,8 +79,9 @@ router.post(
 router.post(
   "/unfollow/:id",
   authentication(),
+  validation(validator.followUser),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    await UserService.unFollowUser(req.user._id!.toString(), req.params.id as string);
+    await UserService.unFollowUser(req.user._id!.toString(), req.validate.params);
   }),
 );
 
@@ -95,8 +99,9 @@ router.get(
 router.post(
   "/accept-follow-request/:id",
   authentication(),
+  validation(validator.followUser),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    await UserService.acceptFollowRequest(req.user._id!.toString(), req.params.id as string);
+    await UserService.acceptFollowRequest(req.user._id!.toString(), req.validate.params);
   }),
 );
 
@@ -104,8 +109,9 @@ router.post(
 router.post(
   "/reject-follow-request/:id",
   authentication(),
+  validation(validator.followUser),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    await UserService.rejectFollowRequest(req.user._id!.toString(), req.params.id as string);
+    await UserService.rejectFollowRequest(req.user._id!.toString(), req.validate.params);
   }),
 );
 
@@ -122,8 +128,9 @@ router.post(
 router.get(
   "/search",
   authentication(),
+  validation(validator.search),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IPagination<IUser>>> => {
-    const data = await UserService.searchUser(req.query.search as string, req.user._id!.toString());
+    const data = await UserService.searchUser(req.validate.query, req.user._id!.toString());
     return { data };
   }),
 );
