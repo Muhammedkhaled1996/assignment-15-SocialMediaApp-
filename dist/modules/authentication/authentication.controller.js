@@ -43,9 +43,10 @@ const validators = __importStar(require("./authentication.validation"));
 const utils_1 = require("../../common/utils");
 const enum_1 = require("../../common/enum");
 const service_1 = require("../../common/service");
+const issuer_1 = require("../../common/utils/issuer");
 const router = (0, express_1.Router)({ caseSensitive: true, strict: true });
 router.post("/signup", (0, middleware_1.validation)(validators.signup), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.signup(req.validate.body, `${req.protocol}://${req.host}`);
+    const data = await authentication_service_1.default.signup(req.validate.body, (0, issuer_1.getIssuer)(req));
     return { status: 201, data };
 }));
 router.patch("/confirm-email", (0, middleware_1.validation)(validators.confirmEmail), (0, middleware_1.responceFormatter)(async (req, res, next) => {
@@ -56,7 +57,7 @@ router.patch("/resend-otp", (0, middleware_1.validation)(validators.resendOtp), 
 }));
 const loginLimiter = utils_1.rateLimiterService.generateLimiter({ limit: 5, ttl: 5, skipSuccessfulRequests: true });
 router.post("/login", loginLimiter, (0, middleware_1.validation)(validators.login), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.login(req.validate.body, `${req.protocol}://${req.host}`);
+    const data = await authentication_service_1.default.login(req.validate.body, (0, issuer_1.getIssuer)(req));
     if (req.rateLimit?.key)
         await service_1.cacheService.del({ key: req.rateLimit.key });
     return { data };
@@ -65,8 +66,8 @@ router.post("/rotate-token", (0, middleware_1.authentication)(enum_1.TokenEnum.R
     const data = await authentication_service_1.default.rotateToken(req.payload, req.user);
     return { data };
 }));
-router.post("/sigup-with-gmail", (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const { status, data } = await authentication_service_1.default.siginUpWithGmail(req.body, `${req.protocol}://${req.host}`);
+router.post("/signup-with-gmail", (0, middleware_1.responceFormatter)(async (req, res, next) => {
+    const { status, data } = await authentication_service_1.default.siginUpWithGmail(req.body, (0, issuer_1.getIssuer)(req));
     return { data, status };
 }));
 router.post("/logout", (0, middleware_1.validation)(validators.logoutSchema), (0, middleware_1.authentication)(), (0, middleware_1.responceFormatter)(async (req, res, next) => {

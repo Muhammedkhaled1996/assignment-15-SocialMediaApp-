@@ -19,7 +19,7 @@ class AuthenticationService {
         this.userRepository = new repository_1.UserRepository();
         this.cacheService = service_1.cacheService;
         this.client = new google_auth_library_1.OAuth2Client();
-        this.token = security_1.tokenSecurityService;
+        this.token = service_1.tokenSecurityService;
     }
     async sendEmailOtp({ account, subject, expiresIn = 120, maxTrails = 3, blockInSeconds = 300, }) {
         const email = account.email;

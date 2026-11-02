@@ -45,6 +45,7 @@ const local_multer_js_1 = require("../../common/utils/multer/local.multer.js");
 const user_repository_js_1 = require("../../common/repository/user.repository.js");
 const validation_middleware_js_1 = require("../../middleware/validation.middleware.js");
 const validator = __importStar(require("./user.validation.js"));
+const multer_enum_js_1 = require("../../common/enum/multer.enum.js");
 const router = (0, express_1.Router)({ caseSensitive: true, strict: true });
 router.get("/", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
     const data = await users_services_1.default.Profile(req.user);
@@ -56,11 +57,16 @@ router.patch("/", (0, authentication_middleware_js_1.authentication)(), (0, vali
 }));
 router.patch("/profile-image", (0, authentication_middleware_js_1.authentication)(), (0, multer_middleware_js_1.uploadMiddleware)({
     isRequired: false,
-    multerMiddleware: (0, local_multer_js_1.localFileUpload)({ maxFileSize: 5 }).array("image"),
+    multerMiddleware: (0, local_multer_js_1.localFileUpload)({ maxFileSize: 5, storageApproach: multer_enum_js_1.StorageApproach.MEMORY }).single("image"),
     customPath: "user",
     validation: local_multer_js_1.fileValidation.image,
 }), (0, responce_middleware_js_1.responceFormatter)(async (req, res) => {
-    const uploadedFile = Array.isArray(req.files) ? req.files[0] : req.file;
+    const files = req.files;
+    const uploadedFile = files && !Array.isArray(files) && files["image"]?.[0]
+        ? files["image"][0]
+        : Array.isArray(files)
+            ? files[0]
+            : req.file;
     const imagePath = uploadedFile?.finalPath || uploadedFile?.path;
     if (!imagePath) {
         throw new Error("No image was uploaded or path is missing");

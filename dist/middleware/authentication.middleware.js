@@ -2,12 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authorization = exports.authentication = exports.bearerAuth = void 0;
 const TokenEnum_js_1 = require("../common/enum/TokenEnum.js");
-const token_security_js_1 = require("../common/security/token.security.js");
 const domain_exception_js_1 = require("../common/exception/domain.exception.js");
-const tokenSecurityService = new token_security_js_1.TokenSecurityService();
+const token_service_js_1 = require("../common/service/token.service.js");
 const bearerAuth = async ({ req, tokenType = TokenEnum_js_1.TokenEnum.Access }) => {
     const { authorization } = req.headers;
-    const { user, payload } = await tokenSecurityService.decodeToken({ authorization, tokenType });
+    const { user, payload } = await token_service_js_1.tokenSecurityService.decodeToken({ authorization, tokenType });
     req.user = user;
     req.payload = payload;
 };

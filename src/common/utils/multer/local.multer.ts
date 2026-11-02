@@ -1,10 +1,12 @@
 import multer from "multer";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { fileTypeFromBuffer } from "file-type";
 import { BadRequestException } from "../../exception";
 import { Request } from "express";
+import { StorageApproach } from "../../enum";
+import { tmpdir } from "node:os";
 
 export const fileValidation = {
   image: ["image/jpeg", "image/png", "image/gif"],
@@ -13,49 +15,77 @@ export const fileValidation = {
 
 export const filePath = async ({ customPath, result = {} }: { customPath: string; result: any }) => {
   await mkdir(resolve(`./assets/${customPath}`), { recursive: true });
-  const uniquefilePath = `assets/${customPath}/${randomUUID()}.${result.ext}`;
-  return uniquefilePath;
+  const uniqueFilePath = `assets/${customPath}/${randomUUID()}.${result.ext}`;
+  return uniqueFilePath;
 };
 
-export const localFileUpload = ({ maxFileSize = 5 } = {}) => {
-  const storage = multer.memoryStorage();
+export const localFileUpload = ({
+  maxFileSize = 5,
+  storageApproach = StorageApproach.MEMORY,
+}: {
+  maxFileSize: number;
+  storageApproach?: StorageApproach;
+}) => {
+  const storage =
+    storageApproach == StorageApproach.MEMORY
+      ? multer.memoryStorage()
+      : multer.diskStorage({
+          destination(req, file, callback) {
+            callback(null, tmpdir());
+          },
+          filename(req, file, callback) {
+            callback(null, randomUUID() + file.originalname);
+          },
+        });
 
   return multer({ storage, limits: { fileSize: maxFileSize * 1024 * 1024 } });
 };
 
-export const proccessFile = async ({
+export const processFile = async ({
   customPath,
   file,
   validation = [],
 }: {
   customPath: string;
-  file: any;
-  validation: any[];
+  file: Express.Multer.File;
+  validation: string[];
 }) => {
+  if (file.path) {
+    file.buffer = await readFile(file.path);
+  }
+
   const result = await fileTypeFromBuffer(file.buffer);
   if (!result || !validation.includes(result.mime)) {
+    await unlink(file.path);
     throw new BadRequestException("Invalid file formats");
   }
   const uniquefilePath = await filePath({ customPath, result });
   await writeFile(resolve(`./${uniquefilePath}`), file.buffer);
+  if (file.path) {
+    await unlink(file.path);
+  }
   file.path = uniquefilePath;
   return file;
 };
 
-export const proccessFiles = async ({
+export const processFiles = async ({
   customPath,
   files = [],
   validation = [],
 }: {
   customPath: string;
-  files: any[];
-  validation: any[];
+  files: Express.Multer.File[];
+  validation: string[];
 }) => {
   const readyToSave = [];
 
   for (const file of files) {
+    if (file.path) {
+      file.buffer = await readFile(file.path);
+    }
     const result = await fileTypeFromBuffer(file.buffer);
     if (!result || !validation.includes(result.mime)) {
+      await unlink(file.path);
       throw new BadRequestException("Invalid file formats");
     }
 
@@ -67,6 +97,9 @@ export const proccessFiles = async ({
 
   for (const { file, path } of readyToSave) {
     await writeFile(resolve(`./${path}`), file.buffer);
+    if (file.path) {
+      await unlink(file.path);
+    }
     file.path = path;
     assets.push(file);
   }
@@ -74,14 +107,14 @@ export const proccessFiles = async ({
   return assets;
 };
 
-export const proccessFields = async ({
+export const processFields = async ({
   customPath,
   fields = {},
   validation = [],
 }: {
   customPath: string;
-  fields: any;
-  validation: any[];
+  fields: Record<string, Express.Multer.File[]>;
+  validation: string[];
 }) => {
   const readyToSave = [];
 
@@ -89,9 +122,13 @@ export const proccessFields = async ({
     const fileList = Array.isArray(fields[fieldName]) ? fields[fieldName] : [fields[fieldName]];
 
     for (const file of fileList) {
-      const result = await fileTypeFromBuffer(file.buffer);
+      if (file!.path) {
+        file!.buffer = await readFile(file!.path);
+      }
+      const result = await fileTypeFromBuffer(file!.buffer);
 
       if (!result || !validation.includes(result.mime)) {
+        await unlink(file!.path);
         throw new BadRequestException("Invalid file formats");
       }
 
@@ -103,28 +140,31 @@ export const proccessFields = async ({
   const assets = [];
 
   for (const { file, path } of readyToSave) {
-    await writeFile(resolve(`./${path}`), file.buffer);
-    file.path = path;
+    await writeFile(resolve(`./${path}`), file!.buffer);
+    if (file?.path) {
+      await unlink(file.path);
+    }
+    file!.path = path;
     assets.push(file);
   }
 
   return assets;
 };
 
-export const proccessMulterUpload = async ({
+export const processMulterUpload = async ({
   req,
   customPath = "general",
   validation = [],
 }: {
   req: Request;
   customPath: string;
-  validation: any[];
+  validation: string[];
 }) => {
   if (req.file) {
-    await proccessFile({ customPath, file: req.file, validation });
+    await processFile({ customPath, file: req.file, validation });
   } else if (Array.isArray(req.files)) {
-    await proccessFiles({ customPath, files: req.files, validation });
+    await processFiles({ customPath, files: req.files, validation });
   } else if (typeof req.files == "object" && Object.keys(req.files).length) {
-    await proccessFields({ customPath, fields: req.files, validation });
+    await processFields({ customPath, fields: req.files, validation });
   }
 };

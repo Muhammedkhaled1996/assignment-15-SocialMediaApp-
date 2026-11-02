@@ -8,6 +8,7 @@ import { rateLimiterService } from "../../common/utils";
 import { TokenEnum } from "../../common/enum";
 import { HUser } from "../../DB/module";
 import { cacheService } from "../../common/service";
+import { getIssuer } from "../../common/utils/issuer";
 
 const router = Router({ caseSensitive: true, strict: true });
 
@@ -15,10 +16,9 @@ const router = Router({ caseSensitive: true, strict: true });
 router.post(
   "/signup",
   validation(validators.signup),
-
   responceFormatter(
     async (req: Request, res: Response, next: NextFunction): Promise<IResponse<{ message: string }>> => {
-      const data = await authenticationService.signup(req.validate.body, `${req.protocol}://${req.host}`);
+      const data = await authenticationService.signup(req.validate.body, getIssuer(req));
       return { status: 201, data };
     },
   ),
@@ -52,7 +52,7 @@ router.post(
   validation(validators.login),
 
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<object>> => {
-    const data = await authenticationService.login(req.validate.body, `${req.protocol}://${req.host}`);
+    const data = await authenticationService.login(req.validate.body, getIssuer(req));
     if (req.rateLimit?.key) await cacheService.del({ key: req.rateLimit.key });
     return { data };
   }),
@@ -70,9 +70,9 @@ router.post(
 
 // sigin with gmail
 router.post(
-  "/sigup-with-gmail",
+  "/signup-with-gmail",
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<object>> => {
-    const { status, data } = await authenticationService.siginUpWithGmail(req.body, `${req.protocol}://${req.host}`);
+    const { status, data } = await authenticationService.siginUpWithGmail(req.body, getIssuer(req));
     return { data, status };
   }),
 );

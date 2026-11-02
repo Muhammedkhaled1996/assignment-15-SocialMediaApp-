@@ -21,3 +21,4 @@ __exportStar(require("./provider.enum"), exports);
 __exportStar(require("./language.enum"), exports);
 __exportStar(require("./logout.enum"), exports);
 __exportStar(require("./email.enum"), exports);
+__exportStar(require("./multer.enum"), exports);

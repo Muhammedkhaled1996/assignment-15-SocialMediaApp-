@@ -1,9 +1,7 @@
 import { TokenEnum } from "../common/enum/TokenEnum.js";
 import type { NextFunction, Request, Response } from "express";
-import { TokenSecurityService } from "../common/security/token.security.js";
 import { ForbiddenException } from "../common/exception/domain.exception.js";
-
-const tokenSecurityService = new TokenSecurityService();
+import { tokenSecurityService } from "../common/service/token.service.js";
 
 export const bearerAuth = async ({ req, tokenType = TokenEnum.Access }: { req: Request; tokenType: TokenEnum }) => {
   const { authorization } = req.headers;

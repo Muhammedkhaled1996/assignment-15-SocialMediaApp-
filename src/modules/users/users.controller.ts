@@ -12,6 +12,7 @@ import { UserRepository } from "../../common/repository/user.repository.js";
 import { IPagination } from "../../common/interface/pagination.interface.js";
 import { validation } from "../../middleware/validation.middleware.js";
 import * as validator from "./user.validation.js";
+import { StorageApproach } from "../../common/enum/multer.enum.js";
 
 const router = Router({ caseSensitive: true, strict: true });
 
@@ -42,18 +43,25 @@ router.patch(
   authentication(),
   uploadMiddleware({
     isRequired: false,
-    multerMiddleware: localFileUpload({ maxFileSize: 5 }).array("image"),
+    multerMiddleware: localFileUpload({ maxFileSize: 5, storageApproach: StorageApproach.MEMORY }).single("image"),
     customPath: "user",
     validation: fileValidation.image,
   }),
   responceFormatter(async (req: Request, res: Response): Promise<IResponse<HUser>> => {
-    const uploadedFile = Array.isArray(req.files) ? req.files[0] : req.file;
+    const files = req.files as Record<string, Express.Multer.File[]> | Express.Multer.File[] | undefined;
+
+    const uploadedFile =
+      files && !Array.isArray(files) && files["image"]?.[0]
+        ? files["image"][0]
+        : Array.isArray(files)
+          ? files[0]
+          : req.file;
+
     const imagePath = (uploadedFile as any)?.finalPath || uploadedFile?.path;
 
     if (!imagePath) {
       throw new Error("No image was uploaded or path is missing");
     }
-
     const userRepository = new UserRepository();
 
     const updatedUser = await userRepository.findByIdAndUpdate({

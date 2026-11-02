@@ -18,7 +18,7 @@ const uploadMiddleware = ({ isRequired = true, multerMiddleware, customPath = "g
                     next(new exception_1.BadRequestException("file is required"));
                     return;
                 }
-                await (0, multer_1.proccessMulterUpload)({ customPath, validation, req });
+                await (0, multer_1.processMulterUpload)({ customPath, validation, req });
                 next();
             }
             catch (error) {

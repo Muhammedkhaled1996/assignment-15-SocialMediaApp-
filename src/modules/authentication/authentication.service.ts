@@ -6,15 +6,8 @@ import {
   TooManyRequestException,
 } from "../../common/exception";
 import { UserRepository } from "../../common/repository";
-import { cacheService, CacheService } from "../../common/service";
-import {
-  compared,
-  encryption,
-  hashed,
-  ICustomJwtPayload,
-  tokenSecurityService,
-  TokenSecurityService,
-} from "../../common/security";
+import { cacheService, CacheService, ICustomJwtPayload, tokenSecurityService, TokenSecurityService } from "../../common/service";
+import { compared, encryption, hashed } from "../../common/security";
 import { OAuth2Client } from "google-auth-library";
 import { createOTP, UserEmailKey, UserEmailTrailsKey, UserLoginTrailsKey } from "../../common/utils";
 import { EmailSubjectEnum, LogoutEnum, providerEnum } from "../../common/enum";
@@ -89,7 +82,7 @@ export class AuthenticationService {
     return;
   }
 
-  // // verify Google account function
+  // verify Google account function
   async verifyGoogleAccount(idToken: string): Promise<ICustomJwtPayload | undefined> {
     const ticket = await this.client.verifyIdToken({
       idToken,
@@ -99,7 +92,7 @@ export class AuthenticationService {
     return payload;
   }
 
-  // // signup function
+  // signup function
   async signup(inputs: SignupDto["body"], issuer?: string): Promise<{ message: string }> {
     const { email, password, confirmPassword, userName, phone } = inputs;
 

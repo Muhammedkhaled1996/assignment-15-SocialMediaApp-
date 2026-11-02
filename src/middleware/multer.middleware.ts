@@ -1,6 +1,6 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 import { BadRequestException } from "../common/exception";
-import { proccessMulterUpload } from "../common/utils/multer";
+import { processMulterUpload } from "../common/utils/multer";
 
 export const uploadMiddleware = ({
   isRequired = true,
@@ -9,9 +9,9 @@ export const uploadMiddleware = ({
   validation = [],
 }: {
   isRequired: boolean;
-  multerMiddleware: any;
+  multerMiddleware: RequestHandler;
   customPath: string;
-  validation: any[];
+  validation: string[];
 }) => {
   return (req: Request, res: Response, next: NextFunction) => {
     multerMiddleware(req, res, async (error: any) => {
@@ -31,7 +31,7 @@ export const uploadMiddleware = ({
           return;
         }
 
-        await proccessMulterUpload({ customPath, validation, req });
+        await processMulterUpload({ customPath, validation, req });
         next();
       } catch (error: any) {
         next(new Error(error.message, { cause: { status: 400 } }));
