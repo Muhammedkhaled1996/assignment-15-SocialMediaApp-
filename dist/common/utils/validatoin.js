@@ -56,13 +56,17 @@ exports.generalValidationFields = {
     id: (lang) => zod_1.z.string().refine((data) => {
         return mongoose_1.default.Types.ObjectId.isValid(data);
     }, { message: lang == enum_1.LanguageEnum.AR ? "صيغة خطا" : "Invalid format" }),
-    file: (lang) => zod_1.z.strictObject({
-        fieldname: zod_1.z.string(),
-        originalname: zod_1.z.string(),
-        encoding: zod_1.z.string(),
-        mimetype: zod_1.z.string(),
-        buffer: zod_1.z.instanceof(Buffer),
-        size: zod_1.z.number(),
-        path: zod_1.z.string(),
-    }),
+    file: (lang) => {
+        return zod_1.z.strictObject({
+            fieldname: zod_1.z.string(),
+            originalname: zod_1.z.string(),
+            encoding: zod_1.z.string(),
+            mimetype: zod_1.z.string(),
+            size: zod_1.z.number(),
+            buffer: zod_1.z.instanceof(Buffer).optional(),
+            destination: zod_1.z.string().optional(),
+            filename: zod_1.z.string().optional(),
+            path: zod_1.z.string().optional(),
+        });
+    },
 };

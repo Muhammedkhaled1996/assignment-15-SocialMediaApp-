@@ -55,7 +55,7 @@ router.patch("/confirm-email", (0, middleware_1.validation)(validators.confirmEm
 router.patch("/resend-otp", (0, middleware_1.validation)(validators.resendOtp), (0, middleware_1.responceFormatter)(async (req, res, next) => {
     const data = await authentication_service_1.default.resendEmail(req.validate.body);
 }));
-const loginLimiter = utils_1.rateLimiterService.generateLimiter({ limit: 5, ttl: 5, skipSuccessfulRequests: true });
+const loginLimiter = utils_1.rateLimiterService.generateLimiter({ limit: 10, ttl: 5, skipSuccessfulRequests: true });
 router.post("/login", loginLimiter, (0, middleware_1.validation)(validators.login), (0, middleware_1.responceFormatter)(async (req, res, next) => {
     const data = await authentication_service_1.default.login(req.validate.body, (0, issuer_1.getIssuer)(req));
     if (req.rateLimit?.key)

@@ -1,7 +1,7 @@
 import dns from "node:dns";
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 import express from "express";
-import { authenticationController, usersController } from "./modules";
+import { authenticationController, postsController, usersController } from "./modules";
 import { globalErrorHandling } from "./middleware";
 import { ORIGINS, PORT } from "./config";
 import { bootstrapDB } from "./DB/connections";
@@ -9,6 +9,7 @@ import cors from "cors";
 import { rateLimiterService } from "./common/utils";
 import helmet from "helmet";
 import morgan from "morgan";
+import { commentsController } from "./modules/comment";
 const app: express.Application = express();
 
 // allow frontend to access apis
@@ -37,5 +38,7 @@ app.all("/", async (req: express.Request, res: express.Response, next: express.N
 
 app.use("/auth", authenticationController);
 app.use("/user", usersController);
+app.use("/post", postsController);
+app.use("/comment", commentsController);
 
 app.use(globalErrorHandling);

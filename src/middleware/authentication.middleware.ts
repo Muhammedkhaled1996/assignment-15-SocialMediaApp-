@@ -3,7 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import { ForbiddenException } from "../common/exception/domain.exception.js";
 import { tokenSecurityService } from "../common/service/token.service.js";
 
-export const bearerAuth = async ({ req, tokenType = TokenEnum.Access }: { req: Request; tokenType: TokenEnum }) => {
+export const bearerAuth = async ({ req, tokenType = TokenEnum.Access }: { req: Request; tokenType?: TokenEnum }) => {
   const { authorization } = req.headers;
   const { user, payload } = await tokenSecurityService.decodeToken({ authorization, tokenType });
   req.user = user;

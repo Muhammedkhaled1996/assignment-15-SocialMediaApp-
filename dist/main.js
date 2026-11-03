@@ -14,6 +14,7 @@ const cors_1 = __importDefault(require("cors"));
 const utils_1 = require("./common/utils");
 const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
+const comment_1 = require("./modules/comment");
 const app = (0, express_1.default)();
 var corsOptions = {
     origin: function (origin, callback) {
@@ -35,4 +36,6 @@ app.all("/", async (req, res, next) => {
 });
 app.use("/auth", modules_1.authenticationController);
 app.use("/user", modules_1.usersController);
+app.use("/post", modules_1.postsController);
+app.use("/comment", comment_1.commentsController);
 app.use(middleware_1.globalErrorHandling);

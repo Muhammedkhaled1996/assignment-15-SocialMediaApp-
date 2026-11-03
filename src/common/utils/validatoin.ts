@@ -85,14 +85,17 @@ export const generalValidationFields = {
       },
       { message: lang == LanguageEnum.AR ? "صيغة خطا" : "Invalid format" },
     ),
-  file: (lang: LanguageEnum) =>
-    z.strictObject({
+  file: (lang: LanguageEnum) => {
+    return z.strictObject({
       fieldname: z.string(),
       originalname: z.string(),
       encoding: z.string(),
       mimetype: z.string(),
-      buffer: z.instanceof(Buffer),
       size: z.number(),
-      path: z.string(),
-    }),
+      buffer: z.instanceof(Buffer).optional(), // أو z.any().optional()
+      destination: z.string().optional(),
+      filename: z.string().optional(),
+      path: z.string().optional(),
+    });
+  },
 };

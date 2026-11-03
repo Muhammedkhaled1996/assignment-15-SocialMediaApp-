@@ -1,3 +1,5 @@
 export * from './error.interface'
 export * from './responce.interface'
 export * from './pagination.interface'
+export * from './post.interface'
+export * from './comment.interface'

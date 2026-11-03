@@ -44,7 +44,7 @@ router.patch(
 );
 
 // login with system
-const loginLimiter = rateLimiterService.generateLimiter({ limit: 5, ttl: 5, skipSuccessfulRequests: true });
+const loginLimiter = rateLimiterService.generateLimiter({ limit: 10, ttl: 5, skipSuccessfulRequests: true });
 
 router.post(
   "/login",
