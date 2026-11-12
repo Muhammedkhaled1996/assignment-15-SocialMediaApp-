@@ -2,8 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadMiddleware = void 0;
 const exception_1 = require("../common/exception");
-const multer_1 = require("../common/utils/multer");
-const uploadMiddleware = ({ isRequired = true, multerMiddleware, customPath = "general", validation = [], }) => {
+const cloud_multer_1 = require("../common/utils/multer/cloud.multer");
+const local_multer_1 = require("../common/utils/multer/local.multer");
+const attachment_enum_1 = require("../common/enum/attachment.enum");
+const uploadMiddleware = ({ isRequired = true, multerMiddleware, customPath = "general", validation = [], storageApproach = attachment_enum_1.AttachmentEnum.local, }) => {
     return (req, res, next) => {
         multerMiddleware(req, res, async (error) => {
             if (error) {
@@ -18,7 +20,12 @@ const uploadMiddleware = ({ isRequired = true, multerMiddleware, customPath = "g
                     next(new exception_1.BadRequestException("file is required"));
                     return;
                 }
-                await (0, multer_1.processMulterUpload)({ customPath, validation, req });
+                if (storageApproach === attachment_enum_1.AttachmentEnum.cloud) {
+                    await (0, cloud_multer_1.processMulterUpload)({ customPath, validation, req });
+                }
+                else {
+                    await (0, local_multer_1.processMulterUpload)({ customPath, validation, req });
+                }
                 next();
             }
             catch (error) {

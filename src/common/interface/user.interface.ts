@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { GenderEnum, providerEnum, UserRole } from "../enum";
 import { FollowStatus } from "../enum/followStatus.enum";
+import { AccountStatusEnum } from "../enum/accountStatus.enum";
 
 export interface IFollowItem {
   id: mongoose.Types.ObjectId;
@@ -31,5 +32,5 @@ export interface IUser {
   changeCredentialsTime?: Date | undefined;
   followers?: IFollowItem[] | undefined;
   followings?: IFollowItem[] | undefined;
-  isPrivate?: boolean
+  isPrivate?: boolean;
 }

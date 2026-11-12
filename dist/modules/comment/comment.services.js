@@ -17,7 +17,7 @@ class CommentService {
     }
     async getPostComments(postId) {
         const comments = await this.commentRepository.paginate({
-            filter: { postId, deletedAt: { $exists: false } },
+            filter: { postId },
             options: {
                 populate: [
                     {
@@ -35,7 +35,7 @@ class CommentService {
     }
     async getSingleComment(commentId) {
         const comment = await this.commentRepository.findOne({
-            filter: { _id: commentId, deletedAt: { $exists: false } },
+            filter: { _id: commentId },
             options: {
                 populate: [
                     {
@@ -61,7 +61,7 @@ class CommentService {
             },
         });
         await this.postRepository.updateOne({
-            filter: { _id: postId, deletedAt: { $exists: false } },
+            filter: { _id: postId },
             data: {
                 $push: { comments: comment._id },
             },
@@ -94,24 +94,29 @@ class CommentService {
         });
         return comment;
     }
-    async deleteComment(commentId, user) {
-        const existingComment = await this.commentRepository.findOne({
-            filter: { _id: commentId, userId: user._id.toString(), deletedAt: { $exists: false } },
-        });
-        if (!existingComment) {
-            throw new domain_exception_js_1.NotFoundException("Comment not found");
+    async deleteComment(user, commentId, force) {
+        if (force) {
+            const filter = {
+                userId: user._id.toString(),
+                _id: commentId,
+                force: true,
+            };
+            const result = await this.commentRepository.deleteOne({ filter });
+            if (result.deletedCount === 0) {
+                throw new domain_exception_js_1.NotFoundException("Comment not found or cannot be permanently deleted");
+            }
+            return result;
         }
         const comment = await this.commentRepository.updateOne({
-            filter: { _id: commentId, userId: user._id.toString(), deletedAt: { $exists: false } },
+            filter: {
+                userId: user._id.toString(),
+                _id: commentId,
+                deletedAt: { $exists: false },
+            },
             data: { deletedAt: new Date() },
         });
-        if (comment.modifiedCount > 0) {
-            await this.postRepository.updateOne({
-                filter: { _id: existingComment.postId, deletedAt: { $exists: false } },
-                data: {
-                    $pull: { comments: existingComment._id },
-                },
-            });
+        if (comment.modifiedCount === 0) {
+            throw new domain_exception_js_1.NotFoundException("Comment not found or already in trash");
         }
         return comment;
     }

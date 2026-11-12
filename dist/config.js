@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ORIGINS = exports.APPLICATIION_NAME = exports.APP_EMAIL = exports.APP_PASSWORD = exports.WEB_CLIENT_IDS = exports.REFRESH_SYSTEM_TOKEN_SIGNATURE = exports.REFRESH_USER_TOKEN_SIGNATURE = exports.REFRESH_TOKEN_EXPIRES_IN = exports.ACCESS_SYSTEM_TOKEN_SIGNATURE = exports.ACCESS_USER_TOKEN_SIGNATURE = exports.ACCESS_TOKEN_EXPIRES_IN = exports.IV_LENGTH = exports.ENC_KEY = exports.REDIS_URI = exports.DB_URI = exports.PORT = exports.NODE_ENV = void 0;
+exports.ATTACHMENT_STORAGE_URL = exports.ATTACHMENT_STORAGE = exports.AWS_BUCKET_NAME = exports.AWS_REGION = exports.AWS_SECRET_ACCESS_KEY = exports.AWS_ACCESS_KEY_ID = exports.ORIGINS = exports.APPLICATIION_NAME = exports.APP_EMAIL = exports.APP_PASSWORD = exports.WEB_CLIENT_IDS = exports.REFRESH_SYSTEM_TOKEN_SIGNATURE = exports.REFRESH_USER_TOKEN_SIGNATURE = exports.REFRESH_TOKEN_EXPIRES_IN = exports.ACCESS_SYSTEM_TOKEN_SIGNATURE = exports.ACCESS_USER_TOKEN_SIGNATURE = exports.ACCESS_TOKEN_EXPIRES_IN = exports.IV_LENGTH = exports.ENC_KEY = exports.REDIS_URI = exports.DB_URI = exports.PORT = exports.NODE_ENV = void 0;
 const node_path_1 = require("node:path");
 const dotenv_1 = require("dotenv");
 exports.NODE_ENV = process.env.NODE_ENV ?? "development";
@@ -21,3 +21,9 @@ exports.APP_PASSWORD = process.env.APP_PASSWORD;
 exports.APP_EMAIL = process.env.APP_EMAIL;
 exports.APPLICATIION_NAME = process.env.APPLICATIION_NAME;
 exports.ORIGINS = process.env.ORIGINS;
+exports.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
+exports.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+exports.AWS_REGION = process.env.AWS_REGION;
+exports.AWS_BUCKET_NAME = process.env.AWS_BUCKET_NAME;
+exports.ATTACHMENT_STORAGE = process.env.ATTACHMENT_STORAGE;
+exports.ATTACHMENT_STORAGE_URL = `https://${exports.AWS_BUCKET_NAME}.s3.${exports.AWS_REGION}.amazonaws.com/`;

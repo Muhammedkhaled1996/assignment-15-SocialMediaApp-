@@ -6,7 +6,13 @@ import {
   TooManyRequestException,
 } from "../../common/exception";
 import { UserRepository } from "../../common/repository";
-import { cacheService, CacheService, ICustomJwtPayload, tokenSecurityService, TokenSecurityService } from "../../common/service";
+import {
+  cacheService,
+  CacheService,
+  ICustomJwtPayload,
+  tokenSecurityService,
+  TokenSecurityService,
+} from "../../common/service";
 import { compared, encryption, hashed } from "../../common/security";
 import { OAuth2Client } from "google-auth-library";
 import { createOTP, UserEmailKey, UserEmailTrailsKey, UserLoginTrailsKey } from "../../common/utils";
@@ -94,9 +100,7 @@ export class AuthenticationService {
 
   // signup function
   async signup(inputs: SignupDto["body"], issuer?: string): Promise<{ message: string }> {
-    const { email, password, confirmPassword, userName, phone } = inputs;
-
-    console.log({ email, password, confirmPassword, userName, phone });
+    const { email, password, confirmPassword, userName, phone, provider } = inputs;
 
     const userExists = await this.userRepository.findOne({
       filter: { email },
@@ -108,10 +112,10 @@ export class AuthenticationService {
     const account = await this.userRepository.create({
       data: {
         email,
-        password: await hashed({ plainText: password }),
-        confirmPassword: await hashed({ plainText: confirmPassword }),
+        password,
         userName,
-        phone: await encryption(phone as string),
+        phone,
+        provider
       },
     });
 

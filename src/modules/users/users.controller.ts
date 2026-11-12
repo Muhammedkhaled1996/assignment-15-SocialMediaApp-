@@ -13,6 +13,7 @@ import { IPagination } from "../../common/interface/pagination.interface.js";
 import { validation } from "../../middleware/validation.middleware.js";
 import * as validator from "./user.validation.js";
 import { StorageApproach } from "../../common/enum/multer.enum.js";
+import { AttachmentEnum } from "../../common/enum/attachment.enum.js";
 
 const router = Router({ caseSensitive: true, strict: true });
 
@@ -46,6 +47,7 @@ router.patch(
     multerMiddleware: localFileUpload({ maxFileSize: 5, storageApproach: StorageApproach.MEMORY }).single("image"),
     customPath: "user",
     validation: fileValidation.image,
+    storageApproach: AttachmentEnum.local,
   }),
   responceFormatter(async (req: Request, res: Response): Promise<IResponse<HUser>> => {
     const files = req.files as Record<string, Express.Multer.File[]> | Express.Multer.File[] | undefined;

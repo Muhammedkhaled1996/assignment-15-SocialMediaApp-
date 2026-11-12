@@ -60,8 +60,7 @@ class AuthenticationService {
         return payload;
     }
     async signup(inputs, issuer) {
-        const { email, password, confirmPassword, userName, phone } = inputs;
-        console.log({ email, password, confirmPassword, userName, phone });
+        const { email, password, confirmPassword, userName, phone, provider } = inputs;
         const userExists = await this.userRepository.findOne({
             filter: { email },
         });
@@ -71,10 +70,10 @@ class AuthenticationService {
         const account = await this.userRepository.create({
             data: {
                 email,
-                password: await (0, security_1.hashed)({ plainText: password }),
-                confirmPassword: await (0, security_1.hashed)({ plainText: confirmPassword }),
+                password,
                 userName,
-                phone: await (0, security_1.encryption)(phone),
+                phone,
+                provider
             },
         });
         await this.sendEmailOtp({ account, subject: enum_1.EmailSubjectEnum.CONFIRM_EMAIL });

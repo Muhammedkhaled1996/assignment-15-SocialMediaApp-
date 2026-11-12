@@ -22,7 +22,7 @@ export class CommentService {
   // get post comments
   async getPostComments(postId: string): Promise<IPagination<IComment>> {
     const comments = await this.commentRepository.paginate({
-      filter: { postId, deletedAt: { $exists: false } },
+      filter: { postId },
       options: {
         populate: [
           {
@@ -42,7 +42,7 @@ export class CommentService {
   // get single comment
   async getSingleComment(commentId: string): Promise<IComment> {
     const comment = await this.commentRepository.findOne({
-      filter: { _id: commentId, deletedAt: { $exists: false } },
+      filter: { _id: commentId },
       options: {
         populate: [
           {
@@ -76,7 +76,7 @@ export class CommentService {
     });
 
     await this.postRepository.updateOne({
-      filter: { _id: postId, deletedAt: { $exists: false } },
+      filter: { _id: postId },
       data: {
         $push: { comments: comment._id },
       },
@@ -122,30 +122,38 @@ export class CommentService {
   }
 
   // delete comment
-  async deleteComment(commentId: string, user: IUser): Promise<IResponseUpdate> {
-    const existingComment = await this.commentRepository.findOne({
-      filter: { _id: commentId, userId: user._id!.toString(), deletedAt: { $exists: false } },
-    });
+  async deleteComment(user: IUser, commentId: string, force: boolean): Promise<IResponseUpdate> {
+    if (force) {
+      const filter: any = {
+        userId: user._id!.toString(),
+        _id: commentId,
+        force: true,
+      };
 
-    if (!existingComment) {
-      throw new NotFoundException("Comment not found");
+      const result = await this.commentRepository.deleteOne({ filter });
+
+      if (result.deletedCount === 0) {
+        throw new NotFoundException("Comment not found or cannot be permanently deleted");
+      }
+
+      return result as unknown as IResponseUpdate;
     }
 
+    // 2. إذا كان حذف ناعم عادي (Soft Delete)
     const comment = await this.commentRepository.updateOne({
-      filter: { _id: commentId, userId: user._id!.toString(), deletedAt: { $exists: false } },
+      filter: {
+        userId: user._id!.toString(),
+        _id: commentId,
+        deletedAt: { $exists: false }, // التأكد إنه غير محذوف مسبقاً
+      },
       data: { deletedAt: new Date() },
     });
 
-    if (comment.modifiedCount > 0) {
-      await this.postRepository.updateOne({
-        filter: { _id: existingComment.postId, deletedAt: { $exists: false } },
-        data: {
-          $pull: { comments: existingComment._id },
-        },
-      });
+    if (comment.modifiedCount === 0) {
+      throw new NotFoundException("Comment not found or already in trash");
     }
 
-    return comment as unknown as IResponseUpdate;
+    return comment as IResponseUpdate;
   }
 }
 

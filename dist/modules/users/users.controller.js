@@ -46,6 +46,7 @@ const user_repository_js_1 = require("../../common/repository/user.repository.js
 const validation_middleware_js_1 = require("../../middleware/validation.middleware.js");
 const validator = __importStar(require("./user.validation.js"));
 const multer_enum_js_1 = require("../../common/enum/multer.enum.js");
+const attachment_enum_js_1 = require("../../common/enum/attachment.enum.js");
 const router = (0, express_1.Router)({ caseSensitive: true, strict: true });
 router.get("/", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
     const data = await users_services_1.default.Profile(req.user);
@@ -60,6 +61,7 @@ router.patch("/profile-image", (0, authentication_middleware_js_1.authentication
     multerMiddleware: (0, local_multer_js_1.localFileUpload)({ maxFileSize: 5, storageApproach: multer_enum_js_1.StorageApproach.MEMORY }).single("image"),
     customPath: "user",
     validation: local_multer_js_1.fileValidation.image,
+    storageApproach: attachment_enum_js_1.AttachmentEnum.local,
 }), (0, responce_middleware_js_1.responceFormatter)(async (req, res) => {
     const files = req.files;
     const uploadedFile = files && !Array.isArray(files) && files["image"]?.[0]

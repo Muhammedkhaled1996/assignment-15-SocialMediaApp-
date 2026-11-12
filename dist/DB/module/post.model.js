@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PostModel = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
-const userSchema = new mongoose_1.default.Schema({
+const postSchema = new mongoose_1.default.Schema({
     userId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "User", required: true },
     content: { type: String, minLength: 2, maxLength: 100 },
     images: [String],
@@ -21,4 +21,28 @@ const userSchema = new mongoose_1.default.Schema({
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
 });
-exports.PostModel = mongoose_1.default.models.Post || mongoose_1.default.model("Post", userSchema);
+postSchema.pre(["find", "findOne"], function () {
+    const query = this.getFilter();
+    if (query.paranoid != false) {
+        this.setQuery({ ...query, deletedAt: { $exists: false } });
+    }
+});
+postSchema.pre(["updateOne", "updateMany", "findOneAndUpdate"], function () {
+    const query = this.getFilter();
+    if (query.paranoid != false) {
+        this.setQuery({ ...query, deletedAt: { $exists: false } });
+    }
+});
+postSchema.pre(["deleteOne", "deleteMany", "findOneAndDelete"], function () {
+    const query = { ...this.getFilter() };
+    if (query.force) {
+        this.setQuery(query);
+    }
+    else {
+        this.setQuery({
+            ...query,
+            deletedAt: { $exists: true, $ne: null },
+        });
+    }
+});
+exports.PostModel = mongoose_1.default.models.Post || mongoose_1.default.model("Post", postSchema);

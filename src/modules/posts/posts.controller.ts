@@ -10,7 +10,7 @@ import { validation } from "../../middleware/validation.middleware";
 import * as validators from "./posts.validation";
 import { IPost } from "../../common/interface/post.interface";
 import { fileValidation, localFileUpload } from "../../common/utils/multer";
-import { StorageApproach, TokenEnum } from "../../common/enum";
+import { AttachmentEnum, StorageApproach, TokenEnum } from "../../common/enum";
 
 const router = Router({ caseSensitive: true, strict: true });
 
@@ -57,6 +57,7 @@ router.post(
     validation: fileValidation.image,
     customPath: "posts",
     isRequired: false,
+    storageApproach: AttachmentEnum.cloud,
   }),
   validation(validators.createPost),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IPost>> => {
@@ -79,6 +80,7 @@ router.patch(
     validation: fileValidation.image,
     customPath: "posts",
     isRequired: false,
+    storageApproach: AttachmentEnum.cloud,
   }),
   validation(validators.createPost),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponseUpdate> => {
@@ -97,7 +99,12 @@ router.delete(
   "/:postId",
   authentication(),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponseUpdate> => {
-    const data = await postService.deletePost(req.user, req.params.postId as string);
+    const data = await postService.deletePost(
+      req.user,
+      req.params.postId as string,
+      req.query.force as unknown as boolean,
+    );
+
     return { data } as unknown as IResponseUpdate;
   }),
 );

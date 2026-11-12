@@ -29,6 +29,7 @@ const signup = (lang) => {
             phone: utils_1.generalValidationFields.phone(lang),
             gender: utils_1.generalValidationFields.gender(lang),
             role: zod_1.z.enum(enum_1.UserRole).optional(),
+            provider: zod_1.z.enum(enum_1.providerEnum).optional(),
         })
             .superRefine((data, ctx) => {
             utils_1.generalValidationFields.matchFields({ original: "password", copy: "confirmPassword", data, ctx, lang });

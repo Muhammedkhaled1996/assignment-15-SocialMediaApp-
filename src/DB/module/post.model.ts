@@ -1,7 +1,7 @@
 import mongoose, { HydratedDocument } from "mongoose";
 import { IPost } from "../../common/interface";
 
-const userSchema = new mongoose.Schema<IPost>(
+const postSchema = new mongoose.Schema<IPost>(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     content: { type: String, minLength: 2, maxLength: 100 },
@@ -21,5 +21,34 @@ const userSchema = new mongoose.Schema<IPost>(
   },
 );
 
-export const PostModel = mongoose.models.Post || mongoose.model<IPost>("Post", userSchema);
+postSchema.pre(["find", "findOne"], function () {
+  const query = this.getFilter();
+
+  if (query.paranoid != false) {
+    this.setQuery({ ...query, deletedAt: { $exists: false } });
+  }
+});
+
+postSchema.pre(["updateOne", "updateMany", "findOneAndUpdate"], function () {
+  const query = this.getFilter();
+
+  if (query.paranoid != false) {
+    this.setQuery({ ...query, deletedAt: { $exists: false } });
+  }
+});
+
+postSchema.pre(["deleteOne", "deleteMany", "findOneAndDelete"], function () {
+  const query = { ...this.getFilter() };
+
+  if (query.force) {
+    this.setQuery(query);
+  } else {
+    this.setQuery({
+      ...query,
+      deletedAt: { $exists: true, $ne: null },
+    });
+  }
+});
+
+export const PostModel = mongoose.models.Post || mongoose.model<IPost>("Post", postSchema);
 export type HPost = HydratedDocument<IPost>;

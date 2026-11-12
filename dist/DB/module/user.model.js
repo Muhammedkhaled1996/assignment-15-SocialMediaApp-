@@ -7,6 +7,7 @@ exports.UserModel = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const enum_1 = require("../../common/enum");
 const followStatus_enum_1 = require("../../common/enum/followStatus.enum");
+const security_1 = require("../../common/security");
 const userSchema = new mongoose_1.default.Schema({
     firstName: { type: String, required: true, minLength: 2, maxLength: 25 },
     lastName: { type: String, required: true, minLength: 2, maxLength: 25 },
@@ -39,17 +40,21 @@ const userSchema = new mongoose_1.default.Schema({
         default: enum_1.providerEnum.SYSTEM,
     },
     changeCredentialsTime: Date,
-    followers: [{
+    followers: [
+        {
             id: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "User" },
             status: { type: Number, enum: followStatus_enum_1.FollowStatus, default: followStatus_enum_1.FollowStatus.PENDING },
-            createdAt: { type: Date, default: Date.now }
-        }],
-    followings: [{
+            createdAt: { type: Date, default: Date.now },
+        },
+    ],
+    followings: [
+        {
             id: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "User" },
             status: { type: Number, enum: followStatus_enum_1.FollowStatus, default: followStatus_enum_1.FollowStatus.PENDING },
-            createdAt: { type: Date, default: Date.now }
-        }],
-    isPrivate: { type: Boolean, default: false }
+            createdAt: { type: Date, default: Date.now },
+        },
+    ],
+    isPrivate: { type: Boolean, default: false },
 }, {
     timestamps: true,
     autoIndex: true,
@@ -71,5 +76,37 @@ userSchema
 })
     .get(function () {
     return `${this.firstName || ""} ${this.lastName || ""}`.trim();
+});
+userSchema.pre("save", async function () {
+    if (this.isModified("password")) {
+        this.password = await (0, security_1.hashed)({ plainText: this.password });
+    }
+    if (this.isModified("phone")) {
+        this.phone = await (0, security_1.encryption)(this.phone);
+    }
+});
+userSchema.pre(["find", "findOne"], function () {
+    const query = this.getFilter();
+    if (query.paranoid != false) {
+        this.setQuery({ ...query, deletedAt: { $exists: false } });
+    }
+});
+userSchema.pre(["updateOne", "updateMany", "findOneAndUpdate"], function () {
+    const query = this.getFilter();
+    if (query.paranoid != false) {
+        this.setQuery({ ...query, deletedAt: { $exists: false } });
+    }
+});
+userSchema.pre(["deleteOne", "deleteMany", "findOneAndDelete"], function () {
+    const query = { ...this.getFilter() };
+    if (query.force) {
+        this.setQuery(query);
+    }
+    else {
+        this.setQuery({
+            ...query,
+            deletedAt: { $exists: true, $ne: null },
+        });
+    }
 });
 exports.UserModel = mongoose_1.default.models.User || mongoose_1.default.model("User", userSchema);

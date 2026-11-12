@@ -42,6 +42,7 @@ const multer_1 = require("../../common/utils/multer");
 const enum_1 = require("../../common/enum");
 const comment_services_1 = require("./comment.services");
 const validators = __importStar(require("./comment.validation"));
+const cloud_multer_1 = require("../../common/utils/multer/cloud.multer");
 const router = (0, express_1.Router)({ caseSensitive: true, strict: true });
 router.get("/:commentId", (0, authentication_middleware_1.authentication)(), (0, responce_middleware_1.responceFormatter)(async (req, res, next) => {
     const data = await comment_services_1.commentService.getSingleComment(req.params.commentId);
@@ -52,10 +53,11 @@ router.get("/post-comments/:postId", (0, authentication_middleware_1.authenticat
     return { data };
 }));
 router.post("/:postId", (0, authentication_middleware_1.authentication)(), (0, multer_middleware_1.uploadMiddleware)({
-    multerMiddleware: (0, multer_1.localFileUpload)({ maxFileSize: 5, storageApproach: enum_1.StorageApproach.DISK }).array("images"),
+    multerMiddleware: (0, cloud_multer_1.cloudFileUpload)({ maxFileSize: 5, storageApproach: enum_1.StorageApproach.DISK }).array("images"),
     validation: multer_1.fileValidation.image,
     customPath: "comments",
     isRequired: false,
+    storageApproach: enum_1.AttachmentEnum.cloud,
 }), (0, validation_middleware_1.validation)(validators.createComment), (0, responce_middleware_1.responceFormatter)(async (req, res, next) => {
     const data = await comment_services_1.commentService.createComment(req.body, req.params.postId, req.files, req.user);
     return { data, status: 201 };
@@ -65,12 +67,13 @@ router.patch("/:commentId", (0, authentication_middleware_1.authentication)(), (
     validation: multer_1.fileValidation.image,
     customPath: "comments",
     isRequired: false,
+    storageApproach: enum_1.AttachmentEnum.cloud,
 }), (0, validation_middleware_1.validation)(validators.updateComment), (0, responce_middleware_1.responceFormatter)(async (req, res, next) => {
     const data = await comment_services_1.commentService.updateComment(req.body, req.files, req.user, req.params.commentId);
     return { data };
 }));
-router.delete("/:commentId", (0, authentication_middleware_1.authentication)(), (0, validation_middleware_1.validation)(validators.deleteComment), (0, responce_middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await comment_services_1.commentService.deleteComment(req.params.commentId, req.user);
+router.delete("/:commentId", (0, authentication_middleware_1.authentication)(), (0, responce_middleware_1.responceFormatter)(async (req, res, next) => {
+    const data = await comment_services_1.commentService.deleteComment(req.user, req.params.commentId, req.query.force);
     return { data };
 }));
 exports.default = router;

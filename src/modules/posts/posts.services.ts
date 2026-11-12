@@ -18,7 +18,7 @@ export class PostService {
   // get posts
   getPosts(): Promise<IPagination<IPost>> {
     const posts = this.postRepository.paginate({
-      filter: { deletedAt: { $exists: false } },
+      filter: {},
       options: {
         populate: [
           {
@@ -42,7 +42,7 @@ export class PostService {
   // get login user posts
   getUserPosts(userId: string): Promise<IPagination<IPost>> {
     const posts = this.postRepository.paginate({
-      filter: { userId, deletedAt: { $exists: false } },
+      filter: { userId },
       options: {
         populate: [
           {
@@ -66,7 +66,7 @@ export class PostService {
   // get single post
   async getSinglePost(postId: string): Promise<IPost> {
     const post = await this.postRepository.findOne({
-      filter: { _id: postId, deletedAt: { $exists: false } },
+      filter: { _id: postId },
       options: {
         populate: [
           {
@@ -138,15 +138,36 @@ export class PostService {
     return post as IResponseUpdate;
   }
 
-  // update post
-  async deletePost(user: IUser, postId: string): Promise<IResponseUpdate> {
+  //  Soft Delete (الحذف الناعم - نقل لسلة المهملات)
+  async deletePost(user: IUser, postId: string, force : boolean): Promise<IResponseUpdate> {
+    if (force) {
+      const filter: any = {
+        userId: user._id!.toString(),
+        _id: postId,
+        force: true,
+      };
+
+      const result = await this.postRepository.deleteOne({ filter });
+
+      if (result.deletedCount === 0) {
+        throw new NotFoundException("Post not found or cannot be permanently deleted");
+      }
+
+      return result as unknown as IResponseUpdate;
+    }
+
+    // 2. إذا كان حذف ناعم عادي (Soft Delete)
     const post = await this.postRepository.updateOne({
-      filter: { userId: user._id!.toString(), _id: postId, deletedAt: { $exists: false } },
+      filter: {
+        userId: user._id!.toString(),
+        _id: postId,
+        deletedAt: { $exists: false }, // التأكد إنه غير محذوف مسبقاً
+      },
       data: { deletedAt: new Date() },
     });
 
     if (post.modifiedCount === 0) {
-      throw new NotFoundException("Post not found or no changes made");
+      throw new NotFoundException("Post not found or already in trash");
     }
 
     return post as IResponseUpdate;
@@ -155,7 +176,7 @@ export class PostService {
   // like / unlike post
   async likeUnlikePost(user: IUser, postId: string): Promise<IResponseUpdate> {
     const existingPost = (await this.postRepository.findOne({
-      filter: { _id: postId, deletedAt: { $exists: false } },
+      filter: { _id: postId },
     })) as IPost;
 
     if (!existingPost) {
@@ -173,7 +194,7 @@ export class PostService {
     }
 
     const post = await this.postRepository.updateOne({
-      filter: { _id: postId, deletedAt: { $exists: false } },
+      filter: { _id: postId },
       data: updateData,
     });
 
@@ -187,7 +208,7 @@ export class PostService {
   // share post
   async sharePost(user: IUser, postId: string): Promise<IResponseUpdate> {
     const existingPost = (await this.postRepository.findOne({
-      filter: { _id: postId, deletedAt: { $exists: false } },
+      filter: { _id: postId },
     })) as IPost;
 
     if (!existingPost) {
@@ -203,7 +224,7 @@ export class PostService {
     }
 
     const post = await this.postRepository.updateOne({
-      filter: { _id: postId, deletedAt: { $exists: false } },
+      filter: { _id: postId },
       data: { $push: { shares: user._id } },
     });
 

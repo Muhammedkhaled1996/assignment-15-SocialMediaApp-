@@ -2,6 +2,7 @@ import mongoose, { HydratedDocument } from "mongoose";
 import { GenderEnum, providerEnum, UserRole } from "../../common/enum";
 import { IUser } from "../../common/interface/user.interface";
 import { FollowStatus } from "../../common/enum/followStatus.enum";
+import { encryption, hashed } from "../../common/security";
 
 const userSchema = new mongoose.Schema<IUser>(
   {
@@ -36,17 +37,21 @@ const userSchema = new mongoose.Schema<IUser>(
       default: providerEnum.SYSTEM,
     },
     changeCredentialsTime: Date,
-    followers: [{
-      id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      status: { type: Number, enum: FollowStatus, default: FollowStatus.PENDING },
-      createdAt: { type: Date, default: Date.now }
-    }],
-    followings: [{
-      id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      status: { type: Number, enum: FollowStatus, default: FollowStatus.PENDING },
-      createdAt: { type: Date, default: Date.now }
-    }],
-    isPrivate: { type: Boolean, default: false }
+    followers: [
+      {
+        id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        status: { type: Number, enum: FollowStatus, default: FollowStatus.PENDING },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    followings: [
+      {
+        id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        status: { type: Number, enum: FollowStatus, default: FollowStatus.PENDING },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    isPrivate: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -71,6 +76,45 @@ userSchema
   .get(function () {
     return `${this.firstName || ""} ${this.lastName || ""}`.trim();
   });
+
+// hash password and encrypt phone number hook
+userSchema.pre("save", async function () {
+  if (this.isModified("password")) {
+    this.password = await hashed({ plainText: this.password });
+  }
+  if (this.isModified("phone")) {
+    this.phone = await encryption(this.phone as string);
+  }
+});
+
+userSchema.pre(["find", "findOne"], function () {
+  const query = this.getFilter();
+
+  if (query.paranoid != false) {
+    this.setQuery({ ...query, deletedAt: { $exists: false } });
+  }
+});
+
+userSchema.pre(["updateOne", "updateMany", "findOneAndUpdate"], function () {
+  const query = this.getFilter();
+
+  if (query.paranoid != false) {
+    this.setQuery({ ...query, deletedAt: { $exists: false } });
+  }
+});
+
+userSchema.pre(["deleteOne", "deleteMany", "findOneAndDelete"], function () {
+  const query = { ...this.getFilter() };
+
+  if (query.force) {
+    this.setQuery(query);
+  } else {
+    this.setQuery({
+      ...query,
+      deletedAt: { $exists: true, $ne: null },
+    });
+  }
+});
 
 export const UserModel = mongoose.models.User || mongoose.model<IUser>("User", userSchema);
 export type HUser = HydratedDocument<IUser>;

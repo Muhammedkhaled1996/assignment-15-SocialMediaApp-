@@ -4,31 +4,43 @@ export const NODE_ENV = process.env.NODE_ENV ?? "development";
 config({ path: resolve(`.env.${NODE_ENV}`) });
 
 // DB connfigration (mongodb , redis)
-export const PORT : number = parseInt(process.env.PORT ?? "9000");
-export const DB_URI : string = process.env.DB_URI as string;
-export const REDIS_URI : string = process.env.REDIS_URI as string;
+export const PORT: number = parseInt(process.env.PORT ?? "9000");
+export const DB_URI: string = process.env.DB_URI as string;
+export const REDIS_URI: string = process.env.REDIS_URI as string;
 
 // encyraption configration
-export const ENC_KEY : string = process.env.ENC_KEY as string;
-export const IV_LENGTH : number = parseInt(process.env.IV_LENGTH ?? "16");
+export const ENC_KEY: string = process.env.ENC_KEY as string;
+export const IV_LENGTH: number = parseInt(process.env.IV_LENGTH ?? "16");
 
 // token configration
-export const ACCESS_TOKEN_EXPIRES_IN : number = parseInt(process.env.ACCESS_TOKEN_EXPIRES_IN ?? "900");
-export const ACCESS_USER_TOKEN_SIGNATURE : string = process.env.ACCESS_USER_TOKEN_SIGNATURE as string;
-export const ACCESS_SYSTEM_TOKEN_SIGNATURE : string = process.env.ACCESS_SYSTEM_TOKEN_SIGNATURE as string;
-export const REFRESH_TOKEN_EXPIRES_IN : number = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN ?? "30758400");
-export const REFRESH_USER_TOKEN_SIGNATURE : string = process.env.REFRESH_USER_TOKEN_SIGNATURE as string;
-export const REFRESH_SYSTEM_TOKEN_SIGNATURE : string = process.env.REFRESH_SYSTEM_TOKEN_SIGNATURE as string;
+export const ACCESS_TOKEN_EXPIRES_IN: number = parseInt(process.env.ACCESS_TOKEN_EXPIRES_IN ?? "900");
+export const ACCESS_USER_TOKEN_SIGNATURE: string = process.env.ACCESS_USER_TOKEN_SIGNATURE as string;
+export const ACCESS_SYSTEM_TOKEN_SIGNATURE: string = process.env.ACCESS_SYSTEM_TOKEN_SIGNATURE as string;
+export const REFRESH_TOKEN_EXPIRES_IN: number = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN ?? "30758400");
+export const REFRESH_USER_TOKEN_SIGNATURE: string = process.env.REFRESH_USER_TOKEN_SIGNATURE as string;
+export const REFRESH_SYSTEM_TOKEN_SIGNATURE: string = process.env.REFRESH_SYSTEM_TOKEN_SIGNATURE as string;
 
 // sigin with google configration client id
-export const WEB_CLIENT_IDS : string[] = process.env.WEB_CLIENT_IDS ? process.env.WEB_CLIENT_IDS.split(",") : [];
+export const WEB_CLIENT_IDS: string[] = process.env.WEB_CLIENT_IDS ? process.env.WEB_CLIENT_IDS.split(",") : [];
 
 // mail configration
-export const APP_PASSWORD : string = process.env.APP_PASSWORD as string;
-export const APP_EMAIL : string = process.env.APP_EMAIL as string;
+export const APP_PASSWORD: string = process.env.APP_PASSWORD as string;
+export const APP_EMAIL: string = process.env.APP_EMAIL as string;
 
 // app name
-export const APPLICATIION_NAME : string = process.env.APPLICATIION_NAME as string;
+export const APPLICATIION_NAME: string = process.env.APPLICATIION_NAME as string;
 
 // allowed origins to access backend apis
-export const ORIGINS : string = process.env.ORIGINS as string;
+export const ORIGINS: string = process.env.ORIGINS as string;
+
+// Aws configration
+export const AWS_ACCESS_KEY_ID: string = process.env.AWS_ACCESS_KEY_ID as string;
+export const AWS_SECRET_ACCESS_KEY: string = process.env.AWS_SECRET_ACCESS_KEY as string;
+export const AWS_REGION: string = process.env.AWS_REGION as string;
+export const AWS_BUCKET_NAME: string = process.env.AWS_BUCKET_NAME as string;
+
+// attachment storage
+export const ATTACHMENT_STORAGE: string = process.env.ATTACHMENT_STORAGE as string;
+
+// attachment storage url
+export const ATTACHMENT_STORAGE_URL: string = `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/`;

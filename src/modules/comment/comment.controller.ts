@@ -7,11 +7,13 @@ import { uploadMiddleware } from "../../middleware/multer.middleware";
 import { IPagination } from "../../common/interface/pagination.interface";
 import { validation } from "../../middleware/validation.middleware";
 import { fileValidation, localFileUpload } from "../../common/utils/multer";
-import { StorageApproach } from "../../common/enum";
+import { AttachmentEnum, StorageApproach } from "../../common/enum";
 import { commentService } from "./comment.services";
 import { IComment } from "../../common/interface";
 import * as validators from "./comment.validation";
 import { IUser } from "../../common/interface/user.interface";
+import { postService } from "../posts/posts.services";
+import { cloudFileUpload } from "../../common/utils/multer/cloud.multer";
 
 const router = Router({ caseSensitive: true, strict: true });
 
@@ -42,10 +44,11 @@ router.post(
   "/:postId",
   authentication(),
   uploadMiddleware({
-    multerMiddleware: localFileUpload({ maxFileSize: 5, storageApproach: StorageApproach.DISK }).array("images"),
+    multerMiddleware: cloudFileUpload({ maxFileSize: 5, storageApproach: StorageApproach.DISK }).array("images"),
     validation: fileValidation.image,
     customPath: "comments",
     isRequired: false,
+    storageApproach: AttachmentEnum.cloud,
   }),
   validation(validators.createComment),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IComment>> => {
@@ -68,6 +71,7 @@ router.patch(
     validation: fileValidation.image,
     customPath: "comments",
     isRequired: false,
+    storageApproach: AttachmentEnum.cloud,
   }),
   validation(validators.updateComment),
   responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponseUpdate> => {
@@ -85,10 +89,14 @@ router.patch(
 router.delete(
   "/:commentId",
   authentication(),
-  validation(validators.deleteComment),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponseDelete> => {
-    const data = await commentService.deleteComment(req.params.commentId as string , req.user as IUser);
-    return { data } as unknown as IResponseDelete;
+  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponseUpdate> => {
+    const data = await commentService.deleteComment(
+      req.user,
+      req.params.commentId as string,
+      req.query.force as unknown as boolean,
+    );
+
+    return { data } as unknown as IResponseUpdate;
   }),
 );
 

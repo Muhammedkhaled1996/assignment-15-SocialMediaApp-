@@ -14,7 +14,7 @@ class PostService {
     }
     getPosts() {
         const posts = this.postRepository.paginate({
-            filter: { deletedAt: { $exists: false } },
+            filter: {},
             options: {
                 populate: [
                     {
@@ -36,7 +36,7 @@ class PostService {
     }
     getUserPosts(userId) {
         const posts = this.postRepository.paginate({
-            filter: { userId, deletedAt: { $exists: false } },
+            filter: { userId },
             options: {
                 populate: [
                     {
@@ -58,7 +58,7 @@ class PostService {
     }
     async getSinglePost(postId) {
         const post = await this.postRepository.findOne({
-            filter: { _id: postId, deletedAt: { $exists: false } },
+            filter: { _id: postId },
             options: {
                 populate: [
                     {
@@ -117,19 +117,35 @@ class PostService {
         }
         return post;
     }
-    async deletePost(user, postId) {
+    async deletePost(user, postId, force) {
+        if (force) {
+            const filter = {
+                userId: user._id.toString(),
+                _id: postId,
+                force: true,
+            };
+            const result = await this.postRepository.deleteOne({ filter });
+            if (result.deletedCount === 0) {
+                throw new domain_exception_js_1.NotFoundException("Post not found or cannot be permanently deleted");
+            }
+            return result;
+        }
         const post = await this.postRepository.updateOne({
-            filter: { userId: user._id.toString(), _id: postId, deletedAt: { $exists: false } },
+            filter: {
+                userId: user._id.toString(),
+                _id: postId,
+                deletedAt: { $exists: false },
+            },
             data: { deletedAt: new Date() },
         });
         if (post.modifiedCount === 0) {
-            throw new domain_exception_js_1.NotFoundException("Post not found or no changes made");
+            throw new domain_exception_js_1.NotFoundException("Post not found or already in trash");
         }
         return post;
     }
     async likeUnlikePost(user, postId) {
         const existingPost = (await this.postRepository.findOne({
-            filter: { _id: postId, deletedAt: { $exists: false } },
+            filter: { _id: postId },
         }));
         if (!existingPost) {
             throw new domain_exception_js_1.NotFoundException("Post not found");
@@ -143,7 +159,7 @@ class PostService {
             updateData = { $push: { likes: user._id } };
         }
         const post = await this.postRepository.updateOne({
-            filter: { _id: postId, deletedAt: { $exists: false } },
+            filter: { _id: postId },
             data: updateData,
         });
         if (post.modifiedCount === 0) {
@@ -153,7 +169,7 @@ class PostService {
     }
     async sharePost(user, postId) {
         const existingPost = (await this.postRepository.findOne({
-            filter: { _id: postId, deletedAt: { $exists: false } },
+            filter: { _id: postId },
         }));
         if (!existingPost) {
             throw new domain_exception_js_1.NotFoundException("Post not found");
@@ -164,7 +180,7 @@ class PostService {
             throw new domain_exception_js_1.NotFoundException("Post already shared by this user");
         }
         const post = await this.postRepository.updateOne({
-            filter: { _id: postId, deletedAt: { $exists: false } },
+            filter: { _id: postId },
             data: { $push: { shares: user._id } },
         });
         if (post.modifiedCount === 0) {

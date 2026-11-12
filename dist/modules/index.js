@@ -17,3 +17,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./authentication"), exports);
 __exportStar(require("./users"), exports);
 __exportStar(require("./posts"), exports);
+__exportStar(require("./comment"), exports);

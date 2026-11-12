@@ -65,6 +65,7 @@ router.post("/", async (req, res, next) => {
     validation: multer_1.fileValidation.image,
     customPath: "posts",
     isRequired: false,
+    storageApproach: enum_1.AttachmentEnum.cloud,
 }), (0, validation_middleware_1.validation)(validators.createPost), (0, responce_middleware_1.responceFormatter)(async (req, res, next) => {
     const data = await posts_services_1.postService.createPost(req.body, req.files, req.user);
     return { data, status: 201 };
@@ -79,12 +80,13 @@ router.patch("/:postId", async (req, res, next) => {
     validation: multer_1.fileValidation.image,
     customPath: "posts",
     isRequired: false,
+    storageApproach: enum_1.AttachmentEnum.cloud,
 }), (0, validation_middleware_1.validation)(validators.createPost), (0, responce_middleware_1.responceFormatter)(async (req, res, next) => {
     const data = await posts_services_1.postService.updatePost(req.body, req.files, req.user, req.params.postId);
     return { data };
 }));
 router.delete("/:postId", (0, authentication_middleware_1.authentication)(), (0, responce_middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await posts_services_1.postService.deletePost(req.user, req.params.postId);
+    const data = await posts_services_1.postService.deletePost(req.user, req.params.postId, req.query.force);
     return { data };
 }));
 router.patch("/share/:postId", (0, authentication_middleware_1.authentication)(), (0, responce_middleware_1.responceFormatter)(async (req, res, next) => {
