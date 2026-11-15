@@ -1,0 +1,55 @@
+$kind: http-request
+description: |-
+  Validates Total Debits === Total Credits and posts an immutable journal entry
+
+  - **Required Permission:** `accounting.manage`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/accounting/journal-entries"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "description": "Recognize realized Umrah package revenue upon trip completion",
+      "branchId": "{{branchId}}",
+      "tripId": "{{tripId}}",
+      "lines": [
+        {
+          "accountCode": "2200",
+          "debit": 53660,
+          "credit": 0,
+          "memo": "Release deferred customer advance"
+        },
+        {
+          "accountCode": "4100",
+          "debit": 0,
+          "credit": 53660,
+          "memo": "Recognize Umrah trip revenue"
+        }
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () { pm.response.to.have.status(201); });
+      const json = pm.response.json();
+      if (json.data && json.data._id) pm.collectionVariables.set('journalId', json.data._id);
+    language: text/javascript
+order: 4000

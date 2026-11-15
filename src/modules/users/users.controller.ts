@@ -1,156 +1,116 @@
 import { Router } from "express";
-import type { Request, Response, NextFunction } from "express";
-import { authentication } from "../../middleware/authentication.middleware.js";
+import type { Request } from "express";
+import { authentication, authorizeRoles } from "../../middleware/authentication.middleware.js";
 import UserService from "./users.services";
 import { responceFormatter } from "../../middleware/responce.middleware.js";
-import { IFollowItem, IUser } from "../../common/interface/user.interface.js";
+import { IUser } from "../../common/interface/user.interface.js";
 import { IResponse } from "../../common/interface/responce.interface.js";
-import { uploadMiddleware } from "../../middleware/multer.middleware.js";
-import { fileValidation, localFileUpload } from "../../common/utils/multer/local.multer.js";
-import { HUser } from "../../DB/module/user.model.js";
-import { UserRepository } from "../../common/repository/user.repository.js";
 import { IPagination } from "../../common/interface/pagination.interface.js";
 import { validation } from "../../middleware/validation.middleware.js";
 import * as validator from "./user.validation.js";
-import { StorageApproach } from "../../common/enum/multer.enum.js";
-import { AttachmentEnum } from "../../common/enum/attachment.enum.js";
+import { USER_ROLE_LABELS, UserRole } from "../../common/enum/index.js";
 
 const router = Router({ caseSensitive: true, strict: true });
 
-// get profile
+// Update current authenticated user profile
+router.patch(
+  "/profile",
+  authentication(),
+  validation(validator.updateProfile),
+  responceFormatter(async (req: Request): Promise<IResponse<IUser>> => {
+    const data = await UserService.updateProfile(req.user, req.validate.body);
+    return { data };
+  }),
+);
+
+// List users
 router.get(
   "/",
   authentication(),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IUser>> => {
-    const data = await UserService.Profile(req.user);
+  authorizeRoles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.BRANCH_MANAGER),
+  responceFormatter(async (req: Request): Promise<IResponse<IPagination<IUser>>> => {
+    const data = await UserService.listStaffUsers(req.query as any, req.branchContext);
     return { data };
   }),
 );
 
-// update profile
-router.patch(
+// Create user
+router.post(
   "/",
   authentication(),
-  validation(validator.update),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IUser>> => {
-    const data = await UserService.update(req.user, req.validate.body);
+  authorizeRoles(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  validation(validator.createStaffUser),
+  responceFormatter(async (req: Request): Promise<IResponse<IUser>> => {
+    const data = await UserService.createStaffUser(req.validate.body, req.user, req.branchContext);
+    return { status: 201, data };
+  }),
+);
+
+// Get user by ID
+router.get(
+  "/:id",
+  authentication(),
+  authorizeRoles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.BRANCH_MANAGER),
+  validation(validator.userIdParam),
+  responceFormatter(async (req: Request): Promise<IResponse<IUser>> => {
+    const data = await UserService.getUserById(req.validate.params.id, req.user, req.branchContext);
     return { data };
   }),
 );
 
-// upload profile image
+// Update user details
 router.patch(
-  "/profile-image",
+  "/:id",
   authentication(),
-  uploadMiddleware({
-    isRequired: false,
-    multerMiddleware: localFileUpload({ maxFileSize: 5, storageApproach: StorageApproach.MEMORY }).single("image"),
-    customPath: "user",
-    validation: fileValidation.image,
-    storageApproach: AttachmentEnum.local,
-  }),
-  responceFormatter(async (req: Request, res: Response): Promise<IResponse<HUser>> => {
-    const files = req.files as Record<string, Express.Multer.File[]> | Express.Multer.File[] | undefined;
-
-    const uploadedFile =
-      files && !Array.isArray(files) && files["image"]?.[0]
-        ? files["image"][0]
-        : Array.isArray(files)
-          ? files[0]
-          : req.file;
-
-    const imagePath = (uploadedFile as any)?.finalPath || uploadedFile?.path;
-
-    if (!imagePath) {
-      throw new Error("No image was uploaded or path is missing");
-    }
-    const userRepository = new UserRepository();
-
-    const updatedUser = await userRepository.findByIdAndUpdate({
-      id: req.user._id as any,
-      data: { image: imagePath },
-    });
-
-    return { data: updatedUser as HUser };
-  }),
-);
-
-// follow user
-router.post(
-  "/follow/:id",
-  authentication(),
-  validation(validator.followUser),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    await UserService.followUser(req.user._id!.toString(), req.validate.params);
-  }),
-);
-
-// unfollow user
-router.post(
-  "/unfollow/:id",
-  authentication(),
-  validation(validator.followUser),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    await UserService.unFollowUser(req.user._id!.toString(), req.validate.params);
-  }),
-);
-
-// get pending follow request
-router.get(
-  "/get-pending-follow-requests",
-  authentication(),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IFollowItem[]>> => {
-    const data = await UserService.getPendingFollowRequests(req.user._id!.toString());
+  authorizeRoles(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  validation(validator.updateUser),
+  responceFormatter(async (req: Request): Promise<IResponse<IUser>> => {
+    const data = await UserService.updateUser(req.validate.params.id, req.validate.body, req.user, req.branchContext);
     return { data };
   }),
 );
 
-// accept follow request
-router.post(
-  "/accept-follow-request/:id",
+// Change user numeric role (roleNumber)
+router.patch(
+  "/:id/role",
   authentication(),
-  validation(validator.followUser),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    await UserService.acceptFollowRequest(req.user._id!.toString(), req.validate.params);
-  }),
-);
-
-// reject follow request
-router.post(
-  "/reject-follow-request/:id",
-  authentication(),
-  validation(validator.followUser),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    await UserService.rejectFollowRequest(req.user._id!.toString(), req.validate.params);
-  }),
-);
-
-// toggle private
-router.post(
-  "/toggle-private",
-  authentication(),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    await UserService.togglePrivate(req.user._id!.toString());
-  }),
-);
-
-// search user
-router.get(
-  "/search",
-  authentication(),
-  validation(validator.search),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IPagination<IUser>>> => {
-    const data = await UserService.searchUser(req.validate.query, req.user._id!.toString());
+  authorizeRoles(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  validation(validator.changeUserRole),
+  responceFormatter(async (req: Request): Promise<IResponse<IUser>> => {
+    const data = await UserService.changeUserRole(
+      req.validate.params.id,
+      req.validate.body.roleNumber,
+      req.user,
+      req.validate.body.reason,
+    );
     return { data };
   }),
 );
 
-// suggestions
-router.get(
-  "/suggestions",
+// Administrative password reset
+router.patch(
+  "/:id/reset-password",
   authentication(),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<IPagination<IUser>>> => {
-    const data = await UserService.suggestions(req.user._id!.toString());
+  authorizeRoles(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  validation(validator.adminResetPassword),
+  responceFormatter(async (req: Request): Promise<IResponse<object>> => {
+    const data = await UserService.adminResetPassword(
+      req.validate.params.id,
+      req.validate.body.newPassword,
+      req.user,
+    );
+    return { data };
+  }),
+);
+
+// Soft-delete / archive user
+router.delete(
+  "/:id",
+  authentication(),
+  authorizeRoles(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  validation(validator.userIdParam),
+  responceFormatter(async (req: Request): Promise<IResponse<object>> => {
+    const data = await UserService.deleteOrDeactivateUser(req.validate.params.id, req.user, req.branchContext);
     return { data };
   }),
 );

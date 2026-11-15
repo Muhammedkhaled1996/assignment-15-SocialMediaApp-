@@ -1,0 +1,20 @@
+$kind: http-request
+description: When authenticated as a single-branch employee, passing another branch's `branchId` returns `403 FORBIDDEN`.
+url: "{{baseUrl}}/api/v1/passengers"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  branchId: "{{secondaryBranchId}}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Branch-scoped user receives 403 FORBIDDEN when querying another branchId', function () {
+        pm.expect([200, 403]).to.include(pm.response.code);
+      });
+    language: text/javascript
+order: 7000

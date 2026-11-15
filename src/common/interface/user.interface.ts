@@ -1,36 +1,39 @@
 import mongoose from "mongoose";
-import { GenderEnum, providerEnum, UserRole } from "../enum";
-import { FollowStatus } from "../enum/followStatus.enum";
-import { AccountStatusEnum } from "../enum/accountStatus.enum";
-
-export interface IFollowItem {
-  id: mongoose.Types.ObjectId;
-  status: FollowStatus;
-  createdAt: Date;
-}
+import { GenderEnum, UserAccountStatus, UserRole } from "../enum";
 
 export interface IUser {
   id?: string;
   _id?: mongoose.Types.ObjectId;
   firstName: string;
   lastName: string;
+  name?: string | undefined;
   userName?: string | undefined;
   email: string;
   password: string;
-  confirmPassword: string;
+  confirmPassword?: string | undefined;
+  roleNumber: UserRole;
+  branchId?: mongoose.Types.ObjectId | null | undefined;
+  isActive: boolean;
   phone?: string | undefined;
   gender?: GenderEnum | undefined;
   DOB?: string | undefined;
   confirmEmail?: Date | undefined;
   image?: string | undefined;
-  coverImage?: string[] | undefined;
-  role?: UserRole | undefined;
-  provider: providerEnum;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
-  deletedAt?: string | undefined;
+  deletedAt?: Date | string | null | undefined;
   changeCredentialsTime?: Date | undefined;
-  followers?: IFollowItem[] | undefined;
-  followings?: IFollowItem[] | undefined;
-  isPrivate?: boolean;
+
+  // Enterprise ERP Multi-Branch & Security Fields
+  companyId?: mongoose.Types.ObjectId | undefined;
+  primaryBranchId?: mongoose.Types.ObjectId | null | undefined;
+  assignedBranchIds?: mongoose.Types.ObjectId[] | undefined;
+  canAccessAllBranches?: boolean | undefined;
+  accountStatus?: UserAccountStatus | undefined;
+  failedLoginAttempts?: number | undefined;
+  lockUntil?: Date | null | undefined;
+  lastLoginAt?: Date | undefined;
+  employeeCode?: string | undefined;
+  createdBy?: mongoose.Types.ObjectId | undefined;
+  updatedBy?: mongoose.Types.ObjectId | undefined;
 }

@@ -1,0 +1,35 @@
+$kind: http-request
+description: |-
+  Rotates the refresh token and issues a new access_token + refresh_token pair. Pass refresh_token in Authorization header or cookie.
+
+  - **Required Permission:** `Authenticated / Public`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/auth/refresh-token"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+auth:
+  type: bearer
+  credentials:
+    token: "{{refreshToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', function () { pm.response.to.have.status(200); });
+      const json = pm.response.json();
+      if (json.data && json.data.access_token) {
+        pm.collectionVariables.set('accessToken', json.data.access_token);
+        pm.collectionVariables.set('refreshToken', json.data.refresh_token);
+      }
+    language: text/javascript
+examples: ./.resources/6. Refresh Session Token (With Reuse Detection).resources/examples
+order: 6000

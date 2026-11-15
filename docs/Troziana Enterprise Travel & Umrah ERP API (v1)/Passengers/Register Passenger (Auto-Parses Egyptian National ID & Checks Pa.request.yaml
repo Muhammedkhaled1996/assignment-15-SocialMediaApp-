@@ -1,0 +1,53 @@
+$kind: http-request
+name: Register Passenger (Auto-Parses Egyptian National ID & Checks Passport)
+description: |-
+  Registers a passenger, parses 14-digit National ID, checks 6-month passport validity, and links family/mahram
+
+  - **Required Permission:** `passengers.create`
+  - **Branch Scoped:** `true`
+url: "{{baseUrl}}/api/v1/passengers"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "branchId": "{{branchId}}",
+      "arabicName": "محمد أحمد علي حسن",
+      "englishName": "MOHAMED AHMED ALI HASSAN",
+      "nationalId": "29005150101234",
+      "phone": "01012345678",
+      "passportNumber": "A99887766",
+      "passportIssueDate": "2024-01-01",
+      "passportExpirationDate": "2030-01-01",
+      "familyGroupCode": "FAM-CAI-01",
+      "emergencyContact": {
+        "name": "Ali Hassan",
+        "relation": "Brother",
+        "phone": "01099887755"
+      }
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () { pm.response.to.have.status(201); });
+      const json = pm.response.json();
+      if (json.data && json.data._id) pm.collectionVariables.set('passengerId', json.data._id);
+    language: text/javascript
+order: 4000

@@ -1,0 +1,46 @@
+$kind: http-request
+description: |-
+  Creates a branch or main cashbox and posts a balanced opening journal entry if openingBalance > 0
+
+  - **Required Permission:** `finance.cashboxes.manage`
+  - **Branch Scoped:** `true`
+url: "{{baseUrl}}/api/v1/cashboxes"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "code": "CB-CAI-EGP-01",
+      "nameAr": "خزينة فرع القاهرة الرئيسية - جنيه",
+      "nameEn": "Cairo Main EGP Cashbox",
+      "branchId": "{{branchId}}",
+      "isMainCashbox": true,
+      "currency": "EGP",
+      "openingBalance": 100000,
+      "exchangeRateToEgp": 1
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () { pm.response.to.have.status(201); });
+      const json = pm.response.json();
+      if (json.data && json.data._id) pm.collectionVariables.set('cashboxId', json.data._id);
+    language: text/javascript
+order: 2000

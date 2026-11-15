@@ -1,0 +1,43 @@
+$kind: http-request
+description: |-
+  Revokes a specific active session by its sessionId
+
+  - **Required Permission:** `Authenticated / Public`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/auth/sessions/:sessionId"
+method: DELETE
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+pathVariables:
+  - key: sessionId
+    value: "{{sessionId}}"
+    description: MongoDB ObjectId of the UserSession
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Expected HTTP status 200", function () {
+        pm.response.to.have.status(200);
+      });
+      pm.test("Response has standard JSON structure", function () {
+        if (pm.response.headers.get("Content-Type") && pm.response.headers.get("Content-Type").includes("application/json")) {
+          const body = pm.response.json();
+          pm.expect(body).to.be.an("object");
+          if (body.success !== undefined) pm.expect(body.success).to.equal(true);
+        }
+      });
+    language: text/javascript
+examples: ./.resources/9. Revoke Specific User Session.resources/examples
+order: 9000

@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AccountStatusEnum = void 0;
-var AccountStatusEnum;
-(function (AccountStatusEnum) {
-    AccountStatusEnum[AccountStatusEnum["ARCHIVE"] = 0] = "ARCHIVE";
-    AccountStatusEnum[AccountStatusEnum["ACTIVE"] = 1] = "ACTIVE";
-})(AccountStatusEnum || (exports.AccountStatusEnum = AccountStatusEnum = {}));
+exports.UserAccountStatus = void 0;
+var UserAccountStatus;
+(function (UserAccountStatus) {
+    UserAccountStatus["ACTIVE"] = "ACTIVE";
+    UserAccountStatus["SUSPENDED"] = "SUSPENDED";
+    UserAccountStatus["PENDING_ACTIVATION"] = "PENDING_ACTIVATION";
+    UserAccountStatus["ARCHIVED"] = "ARCHIVED";
+})(UserAccountStatus || (exports.UserAccountStatus = UserAccountStatus = {}));

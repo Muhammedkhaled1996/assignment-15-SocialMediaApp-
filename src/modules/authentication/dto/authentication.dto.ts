@@ -1,8 +1,6 @@
 import { z } from "zod";
-import { confirmEmail, login, resendOtp, resetPassword, signup } from "../authentication.validation";
+import { changePassword, login, logoutSchema } from "../authentication.validation";
 
-export type SignupDto = z.infer<ReturnType<typeof signup>>;
 export type LoginDto = z.infer<ReturnType<typeof login>>;
-export type ConfirmEmailDto = z.infer<ReturnType<typeof confirmEmail>>;
-export type ResendOTPDto = z.infer<ReturnType<typeof resendOtp>>;
-export type resetPasswordDto = z.infer<ReturnType<typeof resetPassword>>;
+export type ChangePasswordDto = z.infer<ReturnType<typeof changePassword>>;
+export type LogoutDto = z.infer<ReturnType<typeof logoutSchema>>;

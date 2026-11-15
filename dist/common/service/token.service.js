@@ -8,7 +8,6 @@ const node_crypto_1 = require("node:crypto");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const index_js_1 = require("../enum/index.js");
 const config_js_1 = require("../../config.js");
-const user_model_js_1 = require("../../DB/module/user.model.js");
 const cache_service_js_1 = require("./cache.service.js");
 const domain_exception_js_1 = require("../exception/domain.exception.js");
 const user_repository_js_1 = require("../repository/user.repository.js");
@@ -43,43 +42,18 @@ class TokenSecurityService {
             ttl: Math.ceil(ttl),
         });
     }
-    async detectSignatureLevel(isSystemOrAdmin) {
-        return isSystemOrAdmin ? index_js_1.SignatureLevelEnum.Admin : index_js_1.SignatureLevelEnum.User;
-    }
-    async getSignatures(levelOrKey = index_js_1.SignatureLevelEnum.User) {
-        const signatures = {
-            access_signature: "",
-            refresh_signature: "",
-        };
-        const isAdmin = levelOrKey === true ||
-            levelOrKey === index_js_1.SignatureLevelEnum.Admin ||
-            levelOrKey === "Admin" ||
-            levelOrKey === "System";
-        if (isAdmin) {
-            signatures.access_signature = config_js_1.ACCESS_SYSTEM_TOKEN_SIGNATURE;
-            signatures.refresh_signature = config_js_1.REFRESH_SYSTEM_TOKEN_SIGNATURE;
-        }
-        else {
-            signatures.access_signature = config_js_1.ACCESS_USER_TOKEN_SIGNATURE;
-            signatures.refresh_signature = config_js_1.REFRESH_USER_TOKEN_SIGNATURE;
-        }
-        return signatures;
-    }
     async generateToken({ payload, secret = config_js_1.ACCESS_USER_TOKEN_SIGNATURE, options = { expiresIn: config_js_1.ACCESS_TOKEN_EXPIRES_IN }, }) {
         return jsonwebtoken_1.default.sign(payload, secret, options);
     }
     async verifyToken({ token, secret = config_js_1.ACCESS_USER_TOKEN_SIGNATURE, }) {
         return jsonwebtoken_1.default.verify(token, secret);
     }
-    async createLoginCredentials(user, issuer = "SocialMediaApp") {
-        const userRoles = user.role;
-        const hasAdminPrivilege = userRoles == index_js_1.UserRole.admin || index_js_1.UserRole.superAdmin ? true : false;
-        const signatureLevel = await this.detectSignatureLevel(hasAdminPrivilege);
-        const signatures = await this.getSignatures(signatureLevel);
+    async createLoginCredentials(user, issuer = "TrozianaERP") {
         const jwtid = (0, node_crypto_1.randomUUID)();
+        const roleNumber = user.roleNumber || index_js_1.UserRole.EMPLOYEE;
         const access_token = await this.generateToken({
-            payload: { userRoles },
-            secret: signatures.access_signature,
+            payload: { roleNumber },
+            secret: config_js_1.ACCESS_USER_TOKEN_SIGNATURE,
             options: {
                 subject: user._id.toString(),
                 expiresIn: config_js_1.ACCESS_TOKEN_EXPIRES_IN,
@@ -88,8 +62,8 @@ class TokenSecurityService {
             },
         });
         const refresh_token = await this.generateToken({
-            payload: { userRoles },
-            secret: signatures.refresh_signature,
+            payload: { roleNumber },
+            secret: config_js_1.REFRESH_USER_TOKEN_SIGNATURE,
             options: {
                 subject: user._id.toString(),
                 expiresIn: config_js_1.REFRESH_TOKEN_EXPIRES_IN,
@@ -99,7 +73,7 @@ class TokenSecurityService {
         });
         return { access_token, refresh_token };
     }
-    async decodeToken({ model = user_model_js_1.UserModel, authorization, tokenType = index_js_1.TokenEnum.Access, } = {}) {
+    async decodeToken({ authorization, tokenType = index_js_1.TokenEnum.Access, } = {}) {
         if (!authorization) {
             throw new domain_exception_js_1.UnauthorizedException("Authorization header is missing");
         }
@@ -107,11 +81,9 @@ class TokenSecurityService {
         if (!bearerKey || !token) {
             throw new domain_exception_js_1.UnauthorizedException("missing token parts");
         }
-        const payloadView = jsonwebtoken_1.default.decode(token);
-        const signatures = await this.getSignatures(payloadView?.userRoles == index_js_1.UserRole.admin || index_js_1.UserRole.superAdmin ? true : false);
         const payload = await this.verifyToken({
             token,
-            secret: tokenType === index_js_1.TokenEnum.Refresh ? signatures.refresh_signature : signatures.access_signature,
+            secret: tokenType === index_js_1.TokenEnum.Refresh ? config_js_1.REFRESH_USER_TOKEN_SIGNATURE : config_js_1.ACCESS_USER_TOKEN_SIGNATURE,
         });
         if (!payload?.sub || !payload?.iat) {
             throw new domain_exception_js_1.BadRequestException("invalid token payload");
@@ -130,8 +102,11 @@ class TokenSecurityService {
         if (!user) {
             throw new domain_exception_js_1.NotFoundException("Not registered account");
         }
-        if (user.changeCredentialsTime && user.changeCredentialsTime.getTime() > payload.iat * 1000) {
-            throw new domain_exception_js_1.UnauthorizedException();
+        if (user.isActive === false || (user.accountStatus && user.accountStatus !== "ACTIVE")) {
+            throw new domain_exception_js_1.ForbiddenException(`Account is deactivated (${user.accountStatus || "INACTIVE"})`);
+        }
+        if (user.changeCredentialsTime && Math.floor(user.changeCredentialsTime.getTime() / 1000) > payload.iat) {
+            throw new domain_exception_js_1.UnauthorizedException("Session expired due to security or role update. Please log in again.");
         }
         if (user.phone && user.phone.includes("::")) {
             user.phone = await (0, encryption_security_js_1.decryption)(user.phone);

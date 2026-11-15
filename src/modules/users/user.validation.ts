@@ -1,117 +1,99 @@
 import { z } from "zod";
-import { LanguageEnum, providerEnum, UserRole } from "../../common/enum";
+import { ALL_USER_ROLES, LanguageEnum, UserRole } from "../../common/enum";
 import { generalValidationFields } from "../../common/utils";
 
-export const loginSchema = (lang: LanguageEnum) => {
-  return z.strictObject({
-    email: generalValidationFields.email(lang),
-    password: generalValidationFields.password(lang),
+const roleNumberValidator = z
+  .number()
+  .int()
+  .refine((val) => ALL_USER_ROLES.includes(val as UserRole), {
+    message:
+      "Invalid roleNumber. Must be one of: 1 (SUPER_ADMIN), 2 (ADMIN), 3 (BRANCH_MANAGER), 4 (ACCOUNTANT), 5 (SALES), 6 (PROCUREMENT), 7 (OPERATIONS), 8 (EMPLOYEE)",
   });
-};
 
-export const login = (lang: LanguageEnum) => {
-  return z.object({
-    body: loginSchema(lang),
-    query: z.strictObject({
-      lang: z.enum(["ar", "en"]).default("ar"),
-    }),
-  });
-};
-
-export const signup = (lang: LanguageEnum) => {
-  return z.object({
-    body: loginSchema(lang)
-      .safeExtend({
-        userName: generalValidationFields.userName(lang),
-        confirmPassword: generalValidationFields.confirmPassword(lang),
-        phone: generalValidationFields.phone(lang),
-        gender: generalValidationFields.gender(lang),
-        role: z.enum(UserRole).optional(),
-        provider: z.enum(providerEnum).optional(),
-      })
-      .superRefine((data, ctx) => {
-        generalValidationFields.matchFields({ original: "password", copy: "confirmPassword", data, ctx, lang });
-
-        if (!data.userName.includes(" ")) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["userName"],
-            message: "userName must includes space between firstName and lastName",
-          });
-        }
-      }),
-  });
-};
-
-export const logoutSchema = (lang: LanguageEnum) => {
-  return z.object({
-    body: z.strictObject({
-      action: generalValidationFields.action(lang),
-    }),
-  });
-};
-
-//   .refine(
-//     (data) => {
-//       return data.password == data.confirmPassword;
-//     },
-//     { message: "password mismatch confirmPassword", path: ["confirmPassword"] },
-//   );
-
-export const confirmEmail = (lang: LanguageEnum) => {
-  return z.object({
-    body: z.strictObject({
-      email: generalValidationFields.email(lang),
-      otp: generalValidationFields.otp(lang),
-    }),
-  });
-};
-
-export const resendOtp = (lang: LanguageEnum) => {
-  return z.object({
-    body: z.strictObject({
-      email: generalValidationFields.email(lang),
-    }),
-  });
-};
-
-export const resetPassword = (lang: LanguageEnum) => {
+export const createStaffUser = (lang: LanguageEnum) => {
   return z.object({
     body: z
-      .strictObject({
+      .object({
+        firstName: z.string().min(2).max(50).optional(),
+        lastName: z.string().min(2).max(50).optional(),
+        name: z.string().min(2).max(100).optional(),
+        userName: z.string().min(2).max(100).optional(),
         email: generalValidationFields.email(lang),
-        otp: generalValidationFields.otp(lang),
         password: generalValidationFields.password(lang),
-        confirmPassword: generalValidationFields.confirmPassword(lang),
+        roleNumber: roleNumberValidator.default(UserRole.EMPLOYEE),
+        branchId: generalValidationFields.id(lang).nullable().optional(),
+        primaryBranchId: generalValidationFields.id(lang).nullable().optional(),
+        assignedBranchIds: z.array(generalValidationFields.id(lang)).optional(),
+        canAccessAllBranches: z.boolean().optional(),
+        isActive: z.boolean().optional(),
+        phone: z.string().optional(),
+        gender: generalValidationFields.gender(lang).optional(),
+        employeeCode: z.string().optional(),
       })
-      .superRefine((data, ctx) => {
-        generalValidationFields.matchFields({ original: "password", copy: "confirmPassword", data, ctx, lang });
+      .refine((data) => Boolean((data.firstName && data.lastName) || data.name || data.userName), {
+        message: "Provide either (firstName and lastName) or name",
+        path: ["name"],
       }),
   });
 };
 
-export const update = (lang: LanguageEnum) => {
+export const updateUser = (lang: LanguageEnum) => {
+  return z.object({
+    params: z.object({ id: generalValidationFields.id(lang) }),
+    body: z.object({
+      firstName: z.string().min(2).max(50).optional(),
+      lastName: z.string().min(2).max(50).optional(),
+      name: z.string().min(2).max(100).optional(),
+      userName: z.string().min(2).max(100).optional(),
+      email: generalValidationFields.email(lang).optional(),
+      phone: z.string().optional(),
+      gender: generalValidationFields.gender(lang).optional(),
+      branchId: generalValidationFields.id(lang).nullable().optional(),
+      primaryBranchId: generalValidationFields.id(lang).nullable().optional(),
+      assignedBranchIds: z.array(generalValidationFields.id(lang)).optional(),
+      canAccessAllBranches: z.boolean().optional(),
+      isActive: z.boolean().optional(),
+      accountStatus: z.enum(["ACTIVE", "SUSPENDED", "PENDING_ACTIVATION", "ARCHIVED"]).optional(),
+      reason: z.string().optional(),
+      employeeCode: z.string().optional(),
+    }),
+  });
+};
+
+export const updateProfile = (lang: LanguageEnum) => {
   return z.object({
     body: z.strictObject({
-      userName: generalValidationFields.userName(lang).optional(),
+      firstName: z.string().min(2).max(50).optional(),
+      lastName: z.string().min(2).max(50).optional(),
+      name: z.string().min(2).max(100).optional(),
+      userName: z.string().min(2).max(100).optional(),
       phone: generalValidationFields.phone(lang).optional(),
       gender: generalValidationFields.gender(lang).optional(),
     }),
   });
 };
 
-export const followUser = (lang: LanguageEnum) => {
+export const changeUserRole = (lang: LanguageEnum) => {
   return z.object({
-    params: z.strictObject({
-      id: generalValidationFields.id(lang),
+    params: z.object({ id: generalValidationFields.id(lang) }),
+    body: z.object({
+      roleNumber: roleNumberValidator,
+      reason: z.string().optional(),
     }),
   });
 };
 
-export const search = (lang: LanguageEnum) => {
+export const adminResetPassword = (lang: LanguageEnum) => {
   return z.object({
-    query: z.strictObject({
-      search: z.string().min(2),
+    params: z.object({ id: generalValidationFields.id(lang) }),
+    body: z.object({
+      newPassword: generalValidationFields.password(lang),
     }),
+  });
+};
+
+export const userIdParam = (lang: LanguageEnum) => {
+  return z.object({
+    params: z.object({ id: generalValidationFields.id(lang) }),
   });
 };

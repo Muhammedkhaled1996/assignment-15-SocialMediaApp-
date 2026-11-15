@@ -43,7 +43,7 @@ const sendEmail = async ({ to, cc, bcc, subject, text, html, attachments = [], }
             throw new domain_exception_js_1.BadRequestException("Missing email content");
         }
         const info = await transporter.sendMail({
-            from: `"${config_js_1.APPLICATIION_NAME}" <${config_js_1.APP_EMAIL}>`,
+            from: `"${config_js_1.APPLICATION_NAME}" <${config_js_1.APP_EMAIL}>`,
             to,
             cc,
             bcc,

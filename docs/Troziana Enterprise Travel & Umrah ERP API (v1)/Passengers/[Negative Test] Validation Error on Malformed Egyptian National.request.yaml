@@ -1,0 +1,29 @@
+$kind: http-request
+name: "[Negative Test] Validation Error on Malformed Egyptian National ID (400)"
+description: Verifies that malformed Egyptian National IDs are rejected with 400.
+url: "{{baseUrl}}/api/v1/passengers/parse-national-id"
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+body:
+  type: text
+  content: |-
+    {
+      "nationalId": "19005150101234",
+      "travelDate": "2027-01-10"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Returns 400 Bad Request on invalid 14-digit National ID', function () {
+        pm.response.to.have.status(400);
+        const body = pm.response.json();
+        pm.expect(body.success).to.equal(false);
+      });
+    language: text/javascript
+order: 6000

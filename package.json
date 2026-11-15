@@ -1,14 +1,24 @@
 {
-  "name": "assignment-15(socialmediaapp)",
+  "name": "troziana-enterprise-erp",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Troziana Enterprise Travel & Umrah ERP Backend API",
+  "main": "dist/main.js",
   "scripts": {
-    "start:dev": "concurrently -k \"tsc --watch\" \"cross-env NODE_ENV=development cross-env NODE_ENV=development node --watch dist/main.js\"",
-    "start:prod": "concurrently -k \"tsc --watch\" \"cross-env NODE_ENV=production cross-env NODE_ENV=production node --watch dist/main.js\""
+    "build": "tsc",
+    "start:dev": "concurrently -k \"tsc --watch\" \"cross-env NODE_ENV=development node --watch dist/main.js\"",
+    "start:prod": "concurrently -k \"tsc --watch\" \"cross-env NODE_ENV=production node --watch dist/main.js\"",
+    "test": "tsc && cross-env NODE_ENV=test node --test dist/tests/erp.test.js",
+    "migrate:roles": "tsc && node dist/scripts/migrate-roles-to-roleNumber.js",
+    "seed:demo": "tsc && cross-env NODE_ENV=development node dist/scripts/seed-demo-data.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "troziana",
+    "erp",
+    "umrah",
+    "travel",
+    "accounting"
+  ],
+  "author": "Troziana Engineering",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
@@ -39,7 +49,6 @@
     "express-rate-limit": "^8.7.2",
     "file-type": "^22.3.0",
     "geoip-lite": "^2.0.3",
-    "google-auth-library": "^11.3.2",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.11.4",

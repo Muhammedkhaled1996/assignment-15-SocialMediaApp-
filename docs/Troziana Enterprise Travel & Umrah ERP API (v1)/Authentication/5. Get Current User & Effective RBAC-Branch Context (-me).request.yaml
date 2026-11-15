@@ -1,0 +1,40 @@
+$kind: http-request
+name: 5. Get Current User & Effective RBAC/Branch Context (/me)
+description: |-
+  Returns the authenticated user profile, active role codes, effective permissions, and branch scope
+
+  - **Required Permission:** `Authenticated / Public`
+  - **Branch Scoped:** `true`
+url: "{{baseUrl}}/api/v1/auth/me"
+method: GET
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Expected HTTP status 200", function () {
+        pm.response.to.have.status(200);
+      });
+      pm.test("Response has standard JSON structure", function () {
+        if (pm.response.headers.get("Content-Type") && pm.response.headers.get("Content-Type").includes("application/json")) {
+          const body = pm.response.json();
+          pm.expect(body).to.be.an("object");
+          if (body.success !== undefined) pm.expect(body.success).to.equal(true);
+        }
+      });
+    language: text/javascript
+examples: ./.resources/5. Get Current User & Effective RBAC-Branch Context (-me).resources/examples
+order: 5000

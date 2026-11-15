@@ -22,7 +22,7 @@ class CloudService {
     }
     async uploadAsset({ Bucket = config_1.AWS_BUCKET_NAME, file, folder = "general", }) {
         const fileExtension = node_path_1.default.extname(file.originalname);
-        const key = `${config_1.APPLICATIION_NAME}/${folder}/${(0, node_crypto_1.randomUUID)()}${fileExtension}`;
+        const key = `${config_1.APPLICATION_NAME}/${folder}/${(0, node_crypto_1.randomUUID)()}${fileExtension}`;
         const command = new client_s3_1.PutObjectCommand({
             Bucket,
             Key: key,

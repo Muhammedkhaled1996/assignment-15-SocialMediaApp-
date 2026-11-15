@@ -1,0 +1,53 @@
+$kind: http-request
+description: |-
+  Atomically reserves seat(s) with conditional $gte check and Idempotency-Key deduplication
+
+  - **Required Permission:** `bookings.create`
+  - **Branch Scoped:** `true`
+url: "{{baseUrl}}/api/v1/quotas/reserve"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+  - key: Idempotency-Key
+    value: "{{idempotencyKey}}"
+    description: Unique client UUID to prevent duplicate seat deduction on retry
+body:
+  type: json
+  content: |-
+    {
+      "tripId": "{{tripId}}",
+      "branchId": "{{branchId}}",
+      "quantity": 1,
+      "holdMinutes": 1440,
+      "idempotencyKey": "{{idempotencyKey}}"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Expected HTTP status 201", function () {
+        pm.response.to.have.status(201);
+      });
+      pm.test("Response has standard JSON structure", function () {
+        if (pm.response.headers.get("Content-Type") && pm.response.headers.get("Content-Type").includes("application/json")) {
+          const body = pm.response.json();
+          pm.expect(body).to.be.an("object");
+          if (body.success !== undefined) pm.expect(body.success).to.equal(true);
+        }
+      });
+    language: text/javascript
+order: 6000

@@ -1,0 +1,38 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/api/v1/auth/sessions"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: x-branch-id
+      value: "{{branchId}}"
+      description: Active branch context override (validated against user's allowedBranchIds)
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Operation completed",
+        "status": 200,
+        "data": [
+          {
+            "_id": "6733b0a1e4b0a1a2b3c4d5e6",
+            "userId": "6733b0a1e4b0a1a2b3c4d5e0",
+            "jti": "b1c2d3e4-f5a6-4789-9012-3456789abcde",
+            "familyId": "f1e2d3c4-b5a6-4789-9012-3456789abcde",
+            "ipAddress": "127.0.0.1",
+            "userAgent": "Mozilla/5.0",
+            "isRevoked": false,
+            "expiresAt": "2027-11-12T20:00:00.000Z",
+            "lastUsedAt": "2026-11-12T20:00:00.000Z"
+          }
+        ],
+        "meta": {}
+      }
+order: 1000

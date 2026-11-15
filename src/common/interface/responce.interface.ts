@@ -1,7 +1,8 @@
 export interface IResponse<T = undefined, Z = undefined> {
-  message?: boolean;
+  success?: boolean;
+  message?: boolean | string;
   data?: T;
-  extra?: Z;
+  meta?: Z;
   status?: number;
 }
 

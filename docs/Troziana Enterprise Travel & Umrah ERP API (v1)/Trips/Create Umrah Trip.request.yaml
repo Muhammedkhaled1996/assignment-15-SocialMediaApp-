@@ -1,0 +1,59 @@
+$kind: http-request
+description: |-
+  Creates a new trip, deducts allocated seats from FlightLots, and links HotelContracts & approved PricingVersion
+
+  - **Required Permission:** `trips.create`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/trips"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "code": "TRP-1448-001",
+      "nameAr": "رحلة عمرة رجب المميزة - 10 أيام",
+      "nameEn": "Rajab VIP Umrah Trip - 10 Days",
+      "season": "1448H",
+      "destination": "MAKKAH_MADINAH",
+      "departureDate": "2027-01-10T08:00:00.000Z",
+      "returnDate": "2027-01-20T18:00:00.000Z",
+      "capacity": 40,
+      "approvedPricingVersionId": "{{pricingVersionId}}",
+      "quotaMode": "SHARED_QUOTA",
+      "includedServices": [
+        "Saudi Umrah Visa",
+        "Haramain High-Speed Train",
+        "Mazarat Guided Tours"
+      ],
+      "requiredDocuments": [
+        "Original Passport (6+ months)",
+        "Egyptian National ID",
+        "2 Biometric Photos"
+      ],
+      "status": "OPEN_FOR_BOOKING"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () { pm.response.to.have.status(201); });
+      const json = pm.response.json();
+      if (json.data && json.data._id) pm.collectionVariables.set('tripId', json.data._id);
+    language: text/javascript
+order: 3000

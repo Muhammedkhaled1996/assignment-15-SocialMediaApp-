@@ -1,0 +1,56 @@
+$kind: http-request
+name: Record Manual Supplier Ledger Entry / Credit Note
+description: |-
+  Records a deposit, partial payment, full payment, credit note, or adjustment on the supplier ledger
+
+  - **Required Permission:** `suppliers.update`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/suppliers/:id/ledger-entries"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+pathVariables:
+  - key: id
+    value: "{{resourceId}}"
+    description: Supplier ObjectId
+body:
+  type: json
+  content: |-
+    {
+      "entryType": "CREDIT_NOTE",
+      "description": "Early settlement discount credit note",
+      "debitAmount": 2000,
+      "creditAmount": 0,
+      "exchangeRateToEgp": 13.5,
+      "referenceNumber": "CN-2026-001"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Expected HTTP status 201", function () {
+        pm.response.to.have.status(201);
+      });
+      pm.test("Response has standard JSON structure", function () {
+        if (pm.response.headers.get("Content-Type") && pm.response.headers.get("Content-Type").includes("application/json")) {
+          const body = pm.response.json();
+          pm.expect(body).to.be.an("object");
+          if (body.success !== undefined) pm.expect(body.success).to.equal(true);
+        }
+      });
+    language: text/javascript
+order: 4000

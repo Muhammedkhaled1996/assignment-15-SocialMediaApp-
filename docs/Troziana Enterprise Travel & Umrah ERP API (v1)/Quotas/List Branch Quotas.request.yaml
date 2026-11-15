@@ -1,0 +1,47 @@
+$kind: http-request
+description: |-
+  Lists branch seat quotas scoped to the user's accessible branches
+
+  - **Required Permission:** `quotas.read`
+  - **Branch Scoped:** `true`
+url: "{{baseUrl}}/api/v1/quotas"
+method: GET
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+queryParams:
+  - key: tripId
+    value: ""
+    disabled: true
+    description: ""
+  - key: branchId
+    value: ""
+    disabled: true
+    description: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Expected HTTP status 200", function () {
+        pm.response.to.have.status(200);
+      });
+      pm.test("Response has standard JSON structure", function () {
+        if (pm.response.headers.get("Content-Type") && pm.response.headers.get("Content-Type").includes("application/json")) {
+          const body = pm.response.json();
+          pm.expect(body).to.be.an("object");
+          if (body.success !== undefined) pm.expect(body.success).to.equal(true);
+        }
+      });
+    language: text/javascript
+order: 1000

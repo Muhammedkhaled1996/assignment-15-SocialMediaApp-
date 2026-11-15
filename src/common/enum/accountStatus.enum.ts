@@ -1,4 +1,6 @@
-export enum AccountStatusEnum {
-  ARCHIVE,
-  ACTIVE,
+export enum UserAccountStatus {
+  ACTIVE = "ACTIVE",
+  SUSPENDED = "SUSPENDED",
+  PENDING_ACTIVATION = "PENDING_ACTIVATION",
+  ARCHIVED = "ARCHIVED",
 }

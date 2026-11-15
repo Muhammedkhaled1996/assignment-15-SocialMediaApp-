@@ -1,0 +1,51 @@
+$kind: http-request
+description: |-
+  Validates passport 6-month rule, enforces minimumSellingPriceEgp floor, reserves seat atomically, and locks pricingSnapshot
+
+  - **Required Permission:** `bookings.create`
+  - **Branch Scoped:** `true`
+url: "{{baseUrl}}/api/v1/bookings"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+  - key: Idempotency-Key
+    value: "{{idempotencyKey}}"
+    description: Optional idempotency key to prevent duplicate booking creation
+body:
+  type: json
+  content: |-
+    {
+      "tripId": "{{tripId}}",
+      "passengerId": "{{passengerId}}",
+      "branchId": "{{branchId}}",
+      "roomType": "QUAD",
+      "discountAmount": 1000,
+      "status": "ON_HOLD",
+      "roomNumberMakkah": "401",
+      "roomNumberMadinah": "205",
+      "familyGroupCode": "FAM-CAI-01",
+      "notes": "Pilgrim requested Haram view if available"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () { pm.response.to.have.status(201); });
+      const json = pm.response.json();
+      if (json.data && json.data._id) pm.collectionVariables.set('bookingId', json.data._id);
+    language: text/javascript
+order: 3000

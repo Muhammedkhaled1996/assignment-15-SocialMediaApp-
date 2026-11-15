@@ -1,0 +1,12 @@
+workspace:
+  id: 6cd16cee-98de-44b9-8e33-32de62928685
+
+localResources:
+  collections:
+    - ../docs/Troziana-API.postman_collection.json
+    - ../docs/Troziana Enterprise Travel & Umrah ERP API (v1)
+  environments:
+    - ../docs/Troziana-Local.postman_environment.json
+    - ../docs/Troziana ERP — Local Development.environment.yaml
+  specs:
+    - ../docs/openapi.json

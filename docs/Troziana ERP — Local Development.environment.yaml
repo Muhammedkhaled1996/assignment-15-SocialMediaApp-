@@ -1,0 +1,52 @@
+name: Troziana ERP — Local Development
+values:
+  - key: baseUrl
+    value: 'http://localhost:3000'
+  - key: accessToken
+    value: ''
+  - key: refreshToken
+    value: ''
+  - key: branchId
+    value: 6733b0a1e4b0a1a2b3c4d5b1
+  - key: secondaryBranchId
+    value: 6733b0a1e4b0a1a2b3c4d5b2
+  - key: userId
+    value: 6733b0a1e4b0a1a2b3c4d5e0
+  - key: roleId
+    value: 6733b0a1e4b0a1a2b3c4d5a1
+  - key: assignmentId
+    value: 6733b0a1e4b0a1a2b3c4d5a2
+  - key: sessionId
+    value: 6733b0a1e4b0a1a2b3c4d5e6
+  - key: supplierId
+    value: 6733b0a1e4b0a1a2b3c4d5c1
+  - key: flightLotId
+    value: 6733b0a1e4b0a1a2b3c4d5c2
+  - key: hotelId
+    value: 6733b0a1e4b0a1a2b3c4d5c3
+  - key: hotelContractId
+    value: 6733b0a1e4b0a1a2b3c4d5c4
+  - key: pricingVersionId
+    value: 6733b0a1e4b0a1a2b3c4d5c5
+  - key: tripId
+    value: 6733b0a1e4b0a1a2b3c4d5d1
+  - key: passengerId
+    value: 6733b0a1e4b0a1a2b3c4d5d2
+  - key: bookingId
+    value: 6733b0a1e4b0a1a2b3c4d5d3
+  - key: partnerId
+    value: 6733b0a1e4b0a1a2b3c4d5d4
+  - key: wholesaleContractId
+    value: 6733b0a1e4b0a1a2b3c4d5d5
+  - key: cashboxId
+    value: 6733b0a1e4b0a1a2b3c4d5f1
+  - key: secondaryCashboxId
+    value: 6733b0a1e4b0a1a2b3c4d5f2
+  - key: receiptId
+    value: 6733b0a1e4b0a1a2b3c4d5f3
+  - key: journalId
+    value: 6733b0a1e4b0a1a2b3c4d5f4
+  - key: resourceId
+    value: 6733b0a1e4b0a1a2b3c4d5b1
+  - key: idempotencyKey
+    value: idem-initial-001

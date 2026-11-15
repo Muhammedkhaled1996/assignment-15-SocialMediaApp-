@@ -1,0 +1,34 @@
+$kind: collection
+description: Complete Postman Collection v2.1 for Troziana Enterprise Travel & Umrah ERP Backend. Synchronized 1-to-1 with Express routes and `docs/openapi.json`.
+variables:
+  baseUrl: http://localhost:3000
+  accessToken: ""
+  refreshToken: ""
+  branchId: 6733b0a1e4b0a1a2b3c4d5b1
+  secondaryBranchId: 6733b0a1e4b0a1a2b3c4d5b2
+  userId: 6733b0a1e4b0a1a2b3c4d5e0
+  roleId: 6733b0a1e4b0a1a2b3c4d5a1
+  assignmentId: 6733b0a1e4b0a1a2b3c4d5a2
+  sessionId: 6733b0a1e4b0a1a2b3c4d5e6
+  supplierId: 6733b0a1e4b0a1a2b3c4d5c1
+  flightLotId: 6733b0a1e4b0a1a2b3c4d5c2
+  hotelId: 6733b0a1e4b0a1a2b3c4d5c3
+  hotelContractId: 6733b0a1e4b0a1a2b3c4d5c4
+  pricingVersionId: 6733b0a1e4b0a1a2b3c4d5c5
+  tripId: 6733b0a1e4b0a1a2b3c4d5d1
+  passengerId: 6733b0a1e4b0a1a2b3c4d5d2
+  bookingId: 6733b0a1e4b0a1a2b3c4d5d3
+  partnerId: 6733b0a1e4b0a1a2b3c4d5d4
+  wholesaleContractId: 6733b0a1e4b0a1a2b3c4d5d5
+  cashboxId: 6733b0a1e4b0a1a2b3c4d5f1
+  secondaryCashboxId: 6733b0a1e4b0a1a2b3c4d5f2
+  receiptId: 6733b0a1e4b0a1a2b3c4d5f3
+  journalId: 6733b0a1e4b0a1a2b3c4d5f4
+  resourceId: 6733b0a1e4b0a1a2b3c4d5b1
+  idempotencyKey: idem-initial-001
+auth:
+  - id: 062c4196-cad5-4423-a55e-bd11f63b7e20
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{accessToken}}"

@@ -1,0 +1,50 @@
+$kind: http-request
+name: Issue Customer Refund Voucher (Reverses Revenue & Deducts Cashbox)
+description: |-
+  Issues a refund against a booking, deducts cashbox balance, and posts compensating double-entry journal
+
+  - **Required Permission:** `finance.receipts.approve`
+  - **Branch Scoped:** `true`
+url: "{{baseUrl}}/api/v1/receipts/refund"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "bookingId": "{{bookingId}}",
+      "cashboxId": "{{cashboxId}}",
+      "amount": 5000,
+      "reason": "Partial goodwill refund"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Expected HTTP status 201", function () {
+        pm.response.to.have.status(201);
+      });
+      pm.test("Response has standard JSON structure", function () {
+        if (pm.response.headers.get("Content-Type") && pm.response.headers.get("Content-Type").includes("application/json")) {
+          const body = pm.response.json();
+          pm.expect(body).to.be.an("object");
+          if (body.success !== undefined) pm.expect(body.success).to.equal(true);
+        }
+      });
+    language: text/javascript
+order: 3000

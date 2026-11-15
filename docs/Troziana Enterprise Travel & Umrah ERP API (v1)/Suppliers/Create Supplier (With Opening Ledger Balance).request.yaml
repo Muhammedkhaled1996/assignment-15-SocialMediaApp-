@@ -1,0 +1,50 @@
+$kind: http-request
+description: |-
+  Creates a supplier and automatically posts an immutable OPENING_BALANCE ledger entry if openingBalance != 0
+
+  - **Required Permission:** `suppliers.create`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/suppliers"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "code": "SUP-SAUDIA-01",
+      "nameAr": "مجموعة الخطوط السعودية والفنادق",
+      "nameEn": "Saudi Airlines & Haramain Hotels Group",
+      "type": "AIRLINE",
+      "contactPerson": "Sheikh Khalid Al-Harbi",
+      "phone": "+966501234567",
+      "email": "contracts@saudia-partner.sa",
+      "country": "SA",
+      "taxNumber": "300123456700003",
+      "currency": "SAR",
+      "openingBalance": 10000,
+      "exchangeRateToEgp": 13.5
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () { pm.response.to.have.status(201); });
+      const json = pm.response.json();
+      if (json.data && json.data._id) pm.collectionVariables.set('supplierId', json.data._id);
+    language: text/javascript
+order: 2000

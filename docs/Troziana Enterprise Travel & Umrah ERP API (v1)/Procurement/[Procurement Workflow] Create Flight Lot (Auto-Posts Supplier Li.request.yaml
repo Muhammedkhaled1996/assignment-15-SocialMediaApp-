@@ -1,0 +1,57 @@
+$kind: http-request
+name: "[Procurement Workflow] Create Flight Lot (Auto-Posts Supplier Liability)"
+description: |-
+  Creates a DIRECT or BROKER flight lot and posts a CONTRACT_OBLIGATION entry to the supplier ledger
+
+  - **Required Permission:** `flights.create`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/flights"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "airline": "Saudia",
+      "airlineCode": "SV",
+      "flightNumberOutbound": "SV-302",
+      "flightNumberReturn": "SV-309",
+      "supplierId": "{{supplierId}}",
+      "purchaseSource": "DIRECT",
+      "flightRoute": "CAI-JED-MED-CAI",
+      "departureAirport": "CAI",
+      "arrivalAirport": "JED",
+      "returnDepartureAirport": "MED",
+      "returnArrivalAirport": "CAI",
+      "departureDate": "2027-01-10T08:00:00.000Z",
+      "returnDate": "2027-01-20T18:00:00.000Z",
+      "seatQuantity": 50,
+      "unitCost": 1000,
+      "currency": "SAR",
+      "exchangeRateToEgp": 13.5,
+      "paymentTerms": "50% deposit, 50% 7 days before departure"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () { pm.response.to.have.status(201); });
+      const json = pm.response.json();
+      if (json.data && json.data._id) pm.collectionVariables.set('flightLotId', json.data._id);
+    language: text/javascript
+order: 2000

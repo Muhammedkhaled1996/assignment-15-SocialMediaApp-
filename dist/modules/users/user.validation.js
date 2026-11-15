@@ -1,112 +1,100 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.search = exports.followUser = exports.update = exports.resetPassword = exports.resendOtp = exports.confirmEmail = exports.logoutSchema = exports.signup = exports.login = exports.loginSchema = void 0;
+exports.userIdParam = exports.adminResetPassword = exports.changeUserRole = exports.updateProfile = exports.updateUser = exports.createStaffUser = void 0;
 const zod_1 = require("zod");
 const enum_1 = require("../../common/enum");
 const utils_1 = require("../../common/utils");
-const loginSchema = (lang) => {
-    return zod_1.z.strictObject({
-        email: utils_1.generalValidationFields.email(lang),
-        password: utils_1.generalValidationFields.password(lang),
-    });
-};
-exports.loginSchema = loginSchema;
-const login = (lang) => {
-    return zod_1.z.object({
-        body: (0, exports.loginSchema)(lang),
-        query: zod_1.z.strictObject({
-            lang: zod_1.z.enum(["ar", "en"]).default("ar"),
-        }),
-    });
-};
-exports.login = login;
-const signup = (lang) => {
-    return zod_1.z.object({
-        body: (0, exports.loginSchema)(lang)
-            .safeExtend({
-            userName: utils_1.generalValidationFields.userName(lang),
-            confirmPassword: utils_1.generalValidationFields.confirmPassword(lang),
-            phone: utils_1.generalValidationFields.phone(lang),
-            gender: utils_1.generalValidationFields.gender(lang),
-            role: zod_1.z.enum(enum_1.UserRole).optional(),
-            provider: zod_1.z.enum(enum_1.providerEnum).optional(),
-        })
-            .superRefine((data, ctx) => {
-            utils_1.generalValidationFields.matchFields({ original: "password", copy: "confirmPassword", data, ctx, lang });
-            if (!data.userName.includes(" ")) {
-                ctx.addIssue({
-                    code: "custom",
-                    path: ["userName"],
-                    message: "userName must includes space between firstName and lastName",
-                });
-            }
-        }),
-    });
-};
-exports.signup = signup;
-const logoutSchema = (lang) => {
-    return zod_1.z.object({
-        body: zod_1.z.strictObject({
-            action: utils_1.generalValidationFields.action(lang),
-        }),
-    });
-};
-exports.logoutSchema = logoutSchema;
-const confirmEmail = (lang) => {
-    return zod_1.z.object({
-        body: zod_1.z.strictObject({
-            email: utils_1.generalValidationFields.email(lang),
-            otp: utils_1.generalValidationFields.otp(lang),
-        }),
-    });
-};
-exports.confirmEmail = confirmEmail;
-const resendOtp = (lang) => {
-    return zod_1.z.object({
-        body: zod_1.z.strictObject({
-            email: utils_1.generalValidationFields.email(lang),
-        }),
-    });
-};
-exports.resendOtp = resendOtp;
-const resetPassword = (lang) => {
+const roleNumberValidator = zod_1.z
+    .number()
+    .int()
+    .refine((val) => enum_1.ALL_USER_ROLES.includes(val), {
+    message: "Invalid roleNumber. Must be one of: 1 (SUPER_ADMIN), 2 (ADMIN), 3 (BRANCH_MANAGER), 4 (ACCOUNTANT), 5 (SALES), 6 (PROCUREMENT), 7 (OPERATIONS), 8 (EMPLOYEE)",
+});
+const createStaffUser = (lang) => {
     return zod_1.z.object({
         body: zod_1.z
-            .strictObject({
+            .object({
+            firstName: zod_1.z.string().min(2).max(50).optional(),
+            lastName: zod_1.z.string().min(2).max(50).optional(),
+            name: zod_1.z.string().min(2).max(100).optional(),
+            userName: zod_1.z.string().min(2).max(100).optional(),
             email: utils_1.generalValidationFields.email(lang),
-            otp: utils_1.generalValidationFields.otp(lang),
             password: utils_1.generalValidationFields.password(lang),
-            confirmPassword: utils_1.generalValidationFields.confirmPassword(lang),
+            roleNumber: roleNumberValidator.default(enum_1.UserRole.EMPLOYEE),
+            branchId: utils_1.generalValidationFields.id(lang).nullable().optional(),
+            primaryBranchId: utils_1.generalValidationFields.id(lang).nullable().optional(),
+            assignedBranchIds: zod_1.z.array(utils_1.generalValidationFields.id(lang)).optional(),
+            canAccessAllBranches: zod_1.z.boolean().optional(),
+            isActive: zod_1.z.boolean().optional(),
+            phone: zod_1.z.string().optional(),
+            gender: utils_1.generalValidationFields.gender(lang).optional(),
+            employeeCode: zod_1.z.string().optional(),
         })
-            .superRefine((data, ctx) => {
-            utils_1.generalValidationFields.matchFields({ original: "password", copy: "confirmPassword", data, ctx, lang });
+            .refine((data) => Boolean((data.firstName && data.lastName) || data.name || data.userName), {
+            message: "Provide either (firstName and lastName) or name",
+            path: ["name"],
         }),
     });
 };
-exports.resetPassword = resetPassword;
-const update = (lang) => {
+exports.createStaffUser = createStaffUser;
+const updateUser = (lang) => {
+    return zod_1.z.object({
+        params: zod_1.z.object({ id: utils_1.generalValidationFields.id(lang) }),
+        body: zod_1.z.object({
+            firstName: zod_1.z.string().min(2).max(50).optional(),
+            lastName: zod_1.z.string().min(2).max(50).optional(),
+            name: zod_1.z.string().min(2).max(100).optional(),
+            userName: zod_1.z.string().min(2).max(100).optional(),
+            email: utils_1.generalValidationFields.email(lang).optional(),
+            phone: zod_1.z.string().optional(),
+            gender: utils_1.generalValidationFields.gender(lang).optional(),
+            branchId: utils_1.generalValidationFields.id(lang).nullable().optional(),
+            primaryBranchId: utils_1.generalValidationFields.id(lang).nullable().optional(),
+            assignedBranchIds: zod_1.z.array(utils_1.generalValidationFields.id(lang)).optional(),
+            canAccessAllBranches: zod_1.z.boolean().optional(),
+            isActive: zod_1.z.boolean().optional(),
+            accountStatus: zod_1.z.enum(["ACTIVE", "SUSPENDED", "PENDING_ACTIVATION", "ARCHIVED"]).optional(),
+            reason: zod_1.z.string().optional(),
+            employeeCode: zod_1.z.string().optional(),
+        }),
+    });
+};
+exports.updateUser = updateUser;
+const updateProfile = (lang) => {
     return zod_1.z.object({
         body: zod_1.z.strictObject({
-            userName: utils_1.generalValidationFields.userName(lang).optional(),
+            firstName: zod_1.z.string().min(2).max(50).optional(),
+            lastName: zod_1.z.string().min(2).max(50).optional(),
+            name: zod_1.z.string().min(2).max(100).optional(),
+            userName: zod_1.z.string().min(2).max(100).optional(),
             phone: utils_1.generalValidationFields.phone(lang).optional(),
             gender: utils_1.generalValidationFields.gender(lang).optional(),
         }),
     });
 };
-exports.update = update;
-const followUser = (lang) => {
+exports.updateProfile = updateProfile;
+const changeUserRole = (lang) => {
     return zod_1.z.object({
-        params: zod_1.z.strictObject({
-            id: utils_1.generalValidationFields.id(lang),
+        params: zod_1.z.object({ id: utils_1.generalValidationFields.id(lang) }),
+        body: zod_1.z.object({
+            roleNumber: roleNumberValidator,
+            reason: zod_1.z.string().optional(),
         }),
     });
 };
-exports.followUser = followUser;
-const search = (lang) => {
+exports.changeUserRole = changeUserRole;
+const adminResetPassword = (lang) => {
     return zod_1.z.object({
-        query: zod_1.z.strictObject({
-            search: zod_1.z.string().min(2),
+        params: zod_1.z.object({ id: utils_1.generalValidationFields.id(lang) }),
+        body: zod_1.z.object({
+            newPassword: utils_1.generalValidationFields.password(lang),
         }),
     });
 };
-exports.search = search;
+exports.adminResetPassword = adminResetPassword;
+const userIdParam = (lang) => {
+    return zod_1.z.object({
+        params: zod_1.z.object({ id: utils_1.generalValidationFields.id(lang) }),
+    });
+};
+exports.userIdParam = userIdParam;

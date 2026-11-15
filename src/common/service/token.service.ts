@@ -1,33 +1,24 @@
 import { randomUUID } from "node:crypto";
 import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
-import { SignatureLevelEnum, TokenEnum, UserRole } from "../enum/index.js";
+import { TokenEnum, UserRole } from "../enum/index.js";
 import {
-  ACCESS_SYSTEM_TOKEN_SIGNATURE,
   ACCESS_TOKEN_EXPIRES_IN,
   ACCESS_USER_TOKEN_SIGNATURE,
-  REFRESH_SYSTEM_TOKEN_SIGNATURE,
   REFRESH_TOKEN_EXPIRES_IN,
   REFRESH_USER_TOKEN_SIGNATURE,
 } from "../../config.js";
 import { UserModel } from "../../DB/module/user.model.js";
 import { IUser } from "../interface/user.interface.js";
 import { cacheService, CacheService } from "./cache.service.js";
-import { BadRequestException, NotFoundException, UnauthorizedException } from "../exception/domain.exception.js";
+import { BadRequestException, ForbiddenException, NotFoundException, UnauthorizedException } from "../exception/domain.exception.js";
 import { UserRepository } from "../repository/user.repository.js";
 import { decryption } from "../security/encryption.security.js";
 
-// ===================== Types & Interfaces =====================
-
 export interface ICustomJwtPayload extends JwtPayload {
-  userRoles?: number[];
+  roleNumber?: UserRole;
   sub?: string;
   iat?: number;
   jti?: string;
-}
-
-export interface ISignatures {
-  access_signature: string;
-  refresh_signature: string;
 }
 
 export interface IGenerateTokenOptions {
@@ -52,8 +43,6 @@ export interface ILoginCredentials {
   refresh_token: string;
 }
 
-// ===================== Token Security Service =====================
-
 export class TokenSecurityService {
   private cacheService: CacheService;
   private userRepository: UserRepository;
@@ -74,8 +63,6 @@ export class TokenSecurityService {
     return `${this.userBaseRevokeTokenKey({ userId })}::${jti}`;
   }
 
-  // ===================== Revocation Handling =====================
-
   async createRevokeToken({ payload }: { payload: ICustomJwtPayload }): Promise<void> {
     if (!payload.iat || !payload.sub || !payload.jti) return;
 
@@ -92,39 +79,6 @@ export class TokenSecurityService {
     });
   }
 
-  // ===================== Signatures =====================
-
-  async detectSignatureLevel(isSystemOrAdmin: boolean): Promise<SignatureLevelEnum> {
-    return isSystemOrAdmin ? SignatureLevelEnum.Admin : SignatureLevelEnum.User;
-  }
-
-  async getSignatures(
-    levelOrKey: SignatureLevelEnum | string | boolean = SignatureLevelEnum.User,
-  ): Promise<ISignatures> {
-    const signatures: ISignatures = {
-      access_signature: "",
-      refresh_signature: "",
-    };
-
-    const isAdmin =
-      levelOrKey === true ||
-      levelOrKey === SignatureLevelEnum.Admin ||
-      levelOrKey === "Admin" ||
-      levelOrKey === "System";
-
-    if (isAdmin) {
-      signatures.access_signature = ACCESS_SYSTEM_TOKEN_SIGNATURE;
-      signatures.refresh_signature = REFRESH_SYSTEM_TOKEN_SIGNATURE;
-    } else {
-      signatures.access_signature = ACCESS_USER_TOKEN_SIGNATURE;
-      signatures.refresh_signature = REFRESH_USER_TOKEN_SIGNATURE;
-    }
-
-    return signatures;
-  }
-
-  // ===================== Token Sign & Verify =====================
-
   async generateToken({
     payload,
     secret = ACCESS_USER_TOKEN_SIGNATURE,
@@ -140,22 +94,16 @@ export class TokenSecurityService {
     return jwt.verify(token, secret) as T;
   }
 
-  // ===================== Credentials & Decode =====================
-
   async createLoginCredentials(
     user: IUser & { _id: string },
-    issuer: string = "SocialMediaApp",
+    issuer: string = "TrozianaERP",
   ): Promise<ILoginCredentials> {
-    const userRoles = user.role;
-    const hasAdminPrivilege = userRoles == UserRole.admin || UserRole.superAdmin ? true : false;
-    const signatureLevel = await this.detectSignatureLevel(hasAdminPrivilege);
-    const signatures = await this.getSignatures(signatureLevel);
-
     const jwtid = randomUUID();
+    const roleNumber = user.roleNumber || UserRole.EMPLOYEE;
 
     const access_token = await this.generateToken({
-      payload: { userRoles },
-      secret: signatures.access_signature,
+      payload: { roleNumber },
+      secret: ACCESS_USER_TOKEN_SIGNATURE,
       options: {
         subject: user._id.toString(),
         expiresIn: ACCESS_TOKEN_EXPIRES_IN as NonNullable<SignOptions["expiresIn"]>,
@@ -165,8 +113,8 @@ export class TokenSecurityService {
     });
 
     const refresh_token = await this.generateToken({
-      payload: { userRoles },
-      secret: signatures.refresh_signature,
+      payload: { roleNumber },
+      secret: REFRESH_USER_TOKEN_SIGNATURE,
       options: {
         subject: user._id.toString(),
         expiresIn: REFRESH_TOKEN_EXPIRES_IN as NonNullable<SignOptions["expiresIn"]>,
@@ -179,7 +127,6 @@ export class TokenSecurityService {
   }
 
   async decodeToken({
-    model = UserModel,
     authorization,
     tokenType = TokenEnum.Access,
   }: IDecodeTokenOptions = {}): Promise<{ user: IUser; payload: ICustomJwtPayload }> {
@@ -192,15 +139,9 @@ export class TokenSecurityService {
       throw new UnauthorizedException("missing token parts");
     }
 
-    const payloadView = jwt.decode(token) as ICustomJwtPayload | null;
-
-    const signatures = await this.getSignatures(
-      (payloadView?.userRoles as unknown as number) == UserRole.admin || UserRole.superAdmin ? true : false,
-    );
-
     const payload = await this.verifyToken<ICustomJwtPayload>({
       token,
-      secret: tokenType === TokenEnum.Refresh ? signatures.refresh_signature : signatures.access_signature,
+      secret: tokenType === TokenEnum.Refresh ? REFRESH_USER_TOKEN_SIGNATURE : ACCESS_USER_TOKEN_SIGNATURE,
     });
 
     if (!payload?.sub || !payload?.iat) {
@@ -225,8 +166,12 @@ export class TokenSecurityService {
       throw new NotFoundException("Not registered account");
     }
 
-    if (user.changeCredentialsTime && user.changeCredentialsTime.getTime() > payload.iat * 1000) {
-      throw new UnauthorizedException();
+    if (user.isActive === false || (user.accountStatus && user.accountStatus !== "ACTIVE")) {
+      throw new ForbiddenException(`Account is deactivated (${user.accountStatus || "INACTIVE"})`);
+    }
+
+    if (user.changeCredentialsTime && Math.floor(user.changeCredentialsTime.getTime() / 1000) > payload.iat) {
+      throw new UnauthorizedException("Session expired due to security or role update. Please log in again.");
     }
 
     if (user.phone && user.phone.includes("::")) {

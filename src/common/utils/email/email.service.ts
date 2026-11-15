@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { APP_EMAIL, APPLICATIION_NAME } from "../../../config.js";
+import { APP_EMAIL, APPLICATION_NAME } from "../../../config.js";
 import { EmailSubjectEnum } from "../../enum/email.enum.js";
 import { BadRequestException } from "../../exception/domain.exception.js";
 
@@ -79,7 +79,7 @@ export const sendEmail = async ({
       throw new BadRequestException("Missing email content");
     }
     const info = await transporter.sendMail({
-      from: `"${APPLICATIION_NAME}" <${APP_EMAIL}>`, // sender address
+      from: `"${APPLICATION_NAME}" <${APP_EMAIL}>`, // sender address
       to, // list of recipients
       cc,
       bcc,

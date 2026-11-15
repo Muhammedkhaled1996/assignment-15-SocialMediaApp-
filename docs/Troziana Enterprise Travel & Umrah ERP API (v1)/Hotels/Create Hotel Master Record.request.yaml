@@ -1,0 +1,44 @@
+$kind: http-request
+description: |-
+  Creates a Makkah or Madinah hotel in the hotel directory
+
+  - **Required Permission:** `hotels.create`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/hotels"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "nameAr": "فندق دار التوحيد إنتركونتيننتال مكة",
+      "nameEn": "Dar Al Tawhid InterContinental Makkah",
+      "city": "MAKKAH",
+      "stars": 5,
+      "distanceToHaramMeters": 50,
+      "address": "Ibrahim Al Khalil Rd, Haram Plaza"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () { pm.response.to.have.status(201); });
+      const json = pm.response.json();
+      if (json.data && json.data._id) pm.collectionVariables.set('hotelId', json.data._id);
+    language: text/javascript
+order: 2000

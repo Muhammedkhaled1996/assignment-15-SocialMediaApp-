@@ -40,48 +40,69 @@ const express_1 = require("express");
 const authentication_service_1 = __importDefault(require("./authentication.service"));
 const middleware_1 = require("../../middleware");
 const validators = __importStar(require("./authentication.validation"));
-const utils_1 = require("../../common/utils");
 const enum_1 = require("../../common/enum");
 const service_1 = require("../../common/service");
 const issuer_1 = require("../../common/utils/issuer");
+const config_1 = require("../../config");
 const router = (0, express_1.Router)({ caseSensitive: true, strict: true });
-router.post("/signup", (0, middleware_1.validation)(validators.signup), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.signup(req.validate.body, (0, issuer_1.getIssuer)(req));
-    return { status: 201, data };
-}));
-router.patch("/confirm-email", (0, middleware_1.validation)(validators.confirmEmail), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.confirmEmail(req.validate.body);
-}));
-router.patch("/resend-otp", (0, middleware_1.validation)(validators.resendOtp), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.resendEmail(req.validate.body);
-}));
-const loginLimiter = utils_1.rateLimiterService.generateLimiter({ limit: 10, ttl: 5, skipSuccessfulRequests: true });
-router.post("/login", loginLimiter, (0, middleware_1.validation)(validators.login), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.login(req.validate.body, (0, issuer_1.getIssuer)(req));
+function setAuthCookies(res, accessToken, refreshToken) {
+    const isProd = config_1.NODE_ENV === "production";
+    res.cookie("access_token", accessToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: "lax",
+        domain: isProd ? config_1.COOKIE_DOMAIN : undefined,
+        maxAge: config_1.ACCESS_TOKEN_EXPIRES_IN * 1000,
+    });
+    res.cookie("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: "lax",
+        domain: isProd ? config_1.COOKIE_DOMAIN : undefined,
+        maxAge: config_1.REFRESH_TOKEN_EXPIRES_IN * 1000,
+    });
+}
+router.post("/login", (0, middleware_1.validation)(validators.login), (0, middleware_1.responceFormatter)(async (req, res, _next) => {
+    const data = await authentication_service_1.default.login(req.validate.body, (0, issuer_1.getIssuer)(req), {
+        ipAddress: req.ip || req.socket?.remoteAddress,
+        userAgent: req.headers["user-agent"],
+    });
     if (req.rateLimit?.key)
         await service_1.cacheService.del({ key: req.rateLimit.key });
+    setAuthCookies(res, data.access_token, data.refresh_token);
     return { data };
 }));
-router.post("/rotate-token", (0, middleware_1.authentication)(enum_1.TokenEnum.Refresh), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.rotateToken(req.payload, req.user);
+router.post("/refresh-token", (0, middleware_1.authentication)(enum_1.TokenEnum.Refresh), (0, middleware_1.responceFormatter)(async (req, res, _next) => {
+    const data = await authentication_service_1.default.rotateToken(req.payload, req.user, "refresh", (0, issuer_1.getIssuer)(req), true);
+    setAuthCookies(res, data.access_token, data.refresh_token);
     return { data };
 }));
-router.post("/signup-with-gmail", (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const { status, data } = await authentication_service_1.default.siginUpWithGmail(req.body, (0, issuer_1.getIssuer)(req));
-    return { data, status };
+router.get("/me", (0, middleware_1.authentication)(), (0, middleware_1.responceFormatter)(async (req) => {
+    const roleNumber = req.user.roleNumber;
+    return {
+        data: {
+            user: req.user,
+            roleNumber,
+            roleName: enum_1.USER_ROLE_LABELS[roleNumber] || "EMPLOYEE",
+            branchContext: req.branchContext,
+        },
+    };
 }));
-router.post("/logout", (0, middleware_1.validation)(validators.logoutSchema), (0, middleware_1.authentication)(), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.logout(req.payload, req.user, req.validate.body);
-}));
-router.post("/requset-forgot-password-code", (0, middleware_1.validation)(validators.resendOtp), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.requestForgetPasswordCode(req.validate.body);
-}));
-router.patch("/verify-forgot-password", (0, middleware_1.validation)(validators.confirmEmail), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.verifyForgotPasswordCode(req.validate.body);
+router.patch("/change-password", (0, middleware_1.authentication)(), (0, middleware_1.validation)(validators.changePassword), (0, middleware_1.responceFormatter)(async (req) => {
+    const data = await authentication_service_1.default.changePassword(req.user, req.validate.body);
     return { data };
 }));
-router.patch("/reset-password", (0, middleware_1.validation)(validators.resetPassword), (0, middleware_1.responceFormatter)(async (req, res, next) => {
-    const data = await authentication_service_1.default.resetPasswordCode(req.validate.body);
+router.get("/sessions", (0, middleware_1.authentication)(), (0, middleware_1.responceFormatter)(async (req) => {
+    const data = await authentication_service_1.default.listSessions(req.user._id.toString());
     return { data };
+}));
+router.delete("/sessions/:sessionId", (0, middleware_1.authentication)(), (0, middleware_1.responceFormatter)(async (req) => {
+    const data = await authentication_service_1.default.revokeSession(req.user._id.toString(), req.params.sessionId);
+    return { data };
+}));
+router.post("/logout", (0, middleware_1.validation)(validators.logoutSchema), (0, middleware_1.authentication)(), (0, middleware_1.responceFormatter)(async (req, res, _next) => {
+    await authentication_service_1.default.logout(req.payload, req.user, req.validate.body);
+    res.clearCookie("access_token");
+    res.clearCookie("refresh_token");
 }));
 exports.default = router;

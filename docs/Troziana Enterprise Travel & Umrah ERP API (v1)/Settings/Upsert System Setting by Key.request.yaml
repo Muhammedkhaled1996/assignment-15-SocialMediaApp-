@@ -1,0 +1,52 @@
+$kind: http-request
+description: |-
+  Creates or updates a system configuration setting by key
+
+  - **Required Permission:** `settings.manage`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/settings/:key"
+method: PUT
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+pathVariables:
+  - key: key
+    value: DEFAULT_SAR_TO_EGP_RATE
+    description: Uppercase setting key, e.g. DEFAULT_SAR_TO_EGP_RATE
+body:
+  type: json
+  content: |-
+    {
+      "value": 13.5,
+      "category": "FINANCE",
+      "description": "Default SAR to EGP reference exchange rate"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Expected HTTP status 200", function () {
+        pm.response.to.have.status(200);
+      });
+      pm.test("Response has standard JSON structure", function () {
+        if (pm.response.headers.get("Content-Type") && pm.response.headers.get("Content-Type").includes("application/json")) {
+          const body = pm.response.json();
+          pm.expect(body).to.be.an("object");
+          if (body.success !== undefined) pm.expect(body.success).to.equal(true);
+        }
+      });
+    language: text/javascript
+order: 5000

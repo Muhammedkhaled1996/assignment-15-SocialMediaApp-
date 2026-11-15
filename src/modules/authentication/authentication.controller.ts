@@ -5,75 +5,106 @@ import { authentication, responceFormatter, validation } from "../../middleware"
 import { IResponse } from "../../common/interface";
 import * as validators from "./authentication.validation";
 import { rateLimiterService } from "../../common/utils";
-import { TokenEnum } from "../../common/enum";
+import { TokenEnum, USER_ROLE_LABELS, UserRole } from "../../common/enum";
 import { HUser } from "../../DB/module";
 import { cacheService } from "../../common/service";
 import { getIssuer } from "../../common/utils/issuer";
+import { ACCESS_TOKEN_EXPIRES_IN, COOKIE_DOMAIN, NODE_ENV, REFRESH_TOKEN_EXPIRES_IN } from "../../config";
 
 const router = Router({ caseSensitive: true, strict: true });
 
-// signup with system
-router.post(
-  "/signup",
-  validation(validators.signup),
-  responceFormatter(
-    async (req: Request, res: Response, next: NextFunction): Promise<IResponse<{ message: string }>> => {
-      const data = await authenticationService.signup(req.validate.body, getIssuer(req));
-      return { status: 201, data };
-    },
-  ),
-);
+function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+  const isProd = NODE_ENV === "production";
+  res.cookie("access_token", accessToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "lax",
+    domain: isProd ? COOKIE_DOMAIN : undefined,
+    maxAge: ACCESS_TOKEN_EXPIRES_IN * 1000,
+  });
+  res.cookie("refresh_token", refreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "lax",
+    domain: isProd ? COOKIE_DOMAIN : undefined,
+    maxAge: REFRESH_TOKEN_EXPIRES_IN * 1000,
+  });
+}
 
-// confirm email
-router.patch(
-  "/confirm-email",
-  validation(validators.confirmEmail),
-
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const data = await authenticationService.confirmEmail(req.validate.body);
-  }),
-);
-
-// resend otp email
-router.patch(
-  "/resend-otp",
-  validation(validators.resendOtp),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const data = await authenticationService.resendEmail(req.validate.body);
-  }),
-);
-
-// login with system
-const loginLimiter = rateLimiterService.generateLimiter({ limit: 10, ttl: 5, skipSuccessfulRequests: true });
+// login
+// const loginLimiter = rateLimiterService.generateLimiter({ limit: 10, ttl: 5, skipSuccessfulRequests: true });
 
 router.post(
   "/login",
-  loginLimiter,
+  // loginLimiter,
   validation(validators.login),
-
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<object>> => {
-    const data = await authenticationService.login(req.validate.body, getIssuer(req));
+  responceFormatter(async (req: Request, res: Response, _next: NextFunction): Promise<IResponse<object>> => {
+    const data = await authenticationService.login(req.validate.body, getIssuer(req), {
+      ipAddress: req.ip || req.socket?.remoteAddress,
+      userAgent: req.headers["user-agent"],
+    });
     if (req.rateLimit?.key) await cacheService.del({ key: req.rateLimit.key });
+    setAuthCookies(res, data.access_token, data.refresh_token);
     return { data };
   }),
 );
 
-// rotate-token
+// refresh token with rotation and reuse detection
 router.post(
-  "/rotate-token",
+  "/refresh-token",
   authentication(TokenEnum.Refresh),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<object>> => {
-    const data = await authenticationService.rotateToken(req.payload, req.user);
+  responceFormatter(async (req: Request, res: Response, _next: NextFunction): Promise<IResponse<object>> => {
+    const data = await authenticationService.rotateToken(req.payload, req.user, "refresh", getIssuer(req), true);
+    setAuthCookies(res, data.access_token, data.refresh_token);
     return { data };
   }),
 );
 
-// sigin with gmail
-router.post(
-  "/signup-with-gmail",
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<object>> => {
-    const { status, data } = await authenticationService.siginUpWithGmail(req.body, getIssuer(req));
-    return { data, status };
+// current authenticated user & branch context
+router.get(
+  "/me",
+  authentication(),
+  responceFormatter(async (req: Request): Promise<IResponse<object>> => {
+    const roleNumber = req.user.roleNumber as UserRole;
+    return {
+      data: {
+        user: req.user,
+        roleNumber,
+        roleName: USER_ROLE_LABELS[roleNumber] || "EMPLOYEE",
+        branchContext: req.branchContext,
+      },
+    };
+  }),
+);
+
+// change password (authenticated user changing own password)
+router.patch(
+  "/change-password",
+  authentication(),
+  validation(validators.changePassword),
+  responceFormatter(async (req: Request): Promise<IResponse<object>> => {
+    const data = await authenticationService.changePassword(req.user as HUser, req.validate.body);
+    return { data };
+  }),
+);
+
+// list active sessions
+router.get(
+  "/sessions",
+  authentication(),
+  responceFormatter(async (req: Request): Promise<IResponse<object>> => {
+    const data = await authenticationService.listSessions(req.user._id!.toString());
+    return { data };
+  }),
+);
+
+// revoke session
+router.delete(
+  "/sessions/:sessionId",
+  authentication(),
+  responceFormatter(async (req: Request): Promise<IResponse<object>> => {
+    const data = await authenticationService.revokeSession(req.user._id!.toString(), req.params.sessionId as string);
+    return { data };
   }),
 );
 
@@ -82,40 +113,10 @@ router.post(
   "/logout",
   validation(validators.logoutSchema),
   authentication(),
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const data = await authenticationService.logout(req.payload, req.user as HUser, req.validate.body);
-  }),
-);
-
-// forget password
-router.post(
-  "/requset-forgot-password-code",
-  validation(validators.resendOtp),
-
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const data = await authenticationService.requestForgetPasswordCode(req.validate.body);
-  }),
-);
-
-// verify forgot password
-router.patch(
-  "/verify-forgot-password",
-  validation(validators.confirmEmail),
-
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<object>> => {
-    const data = await authenticationService.verifyForgotPasswordCode(req.validate.body);
-    return { data };
-  }),
-);
-
-// reset password
-router.patch(
-  "/reset-password",
-  validation(validators.resetPassword),
-
-  responceFormatter(async (req: Request, res: Response, next: NextFunction): Promise<IResponse<object>> => {
-    const data = await authenticationService.resetPasswordCode(req.validate.body);
-    return { data };
+  responceFormatter(async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
+    await authenticationService.logout(req.payload, req.user as HUser, req.validate.body);
+    res.clearCookie("access_token");
+    res.clearCookie("refresh_token");
   }),
 );
 

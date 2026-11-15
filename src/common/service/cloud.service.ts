@@ -1,5 +1,5 @@
 import { ObjectCannedACL, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { APPLICATIION_NAME, AWS_ACCESS_KEY_ID, AWS_BUCKET_NAME, AWS_REGION, AWS_SECRET_ACCESS_KEY } from "../../config";
+import { APPLICATION_NAME, AWS_ACCESS_KEY_ID, AWS_BUCKET_NAME, AWS_REGION, AWS_SECRET_ACCESS_KEY } from "../../config";
 import { randomUUID } from "node:crypto";
 import { BadRequestException } from "../exception";
 import path from "node:path"; // <-- يفضل استيرادها لأخذ الامتداد فقط
@@ -30,7 +30,7 @@ export class CloudService {
   }): Promise<string> {
     // 2. أخذ امتداد الملف فقط بدلاً من الاسم الأصلي لتجنب المسافات والرموز الغريبة في الرابط
     const fileExtension = path.extname(file.originalname);
-    const key = `${APPLICATIION_NAME}/${folder}/${randomUUID()}${fileExtension}`;
+    const key = `${APPLICATION_NAME}/${folder}/${randomUUID()}${fileExtension}`;
 
     const command = new PutObjectCommand({
       Bucket, // <-- 3. استخدام المتغير المُمرر للدالة

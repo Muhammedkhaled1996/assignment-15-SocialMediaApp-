@@ -1,0 +1,37 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/api/v1/passengers/parse-national-id"
+  method: POST
+  headers:
+    - key: Accept
+      value: application/json
+    - key: x-branch-id
+      value: "{{branchId}}"
+      description: Active branch context override (validated against user's allowedBranchIds)
+    - key: Content-Type
+      value: application/json
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Operation completed",
+        "status": 200,
+        "data": {
+          "nationalId": "29005150101234",
+          "dateOfBirth": "1990-05-15T00:00:00.000Z",
+          "dateOfBirthIso": "1990-05-15",
+          "gender": "MALE",
+          "governorateCode": "01",
+          "governorateName": "Cairo",
+          "ageOnTravelDate": 36,
+          "ageClassification": "ADULT"
+        },
+        "meta": {}
+      }
+order: 1000

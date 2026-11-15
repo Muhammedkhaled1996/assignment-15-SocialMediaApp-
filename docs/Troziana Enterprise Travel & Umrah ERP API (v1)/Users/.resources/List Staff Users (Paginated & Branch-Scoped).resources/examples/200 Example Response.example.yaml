@@ -1,0 +1,76 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/api/v1/users/staff"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: x-branch-id
+      value: "{{branchId}}"
+      description: Active branch context override (validated against user's allowedBranchIds)
+  queryParams:
+    - key: page
+      value: "1"
+      disabled: true
+      description: ""
+    - key: limit
+      value: "20"
+      disabled: true
+      description: ""
+    - key: branchId
+      value: ""
+      disabled: true
+      description: Filter by assigned branch ObjectId
+    - key: status
+      value: ""
+      disabled: true
+      description: ""
+    - key: search
+      value: ""
+      disabled: true
+      description: Search by name, email, or employeeCode
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "message": "Operation completed",
+        "status": 200,
+        "data": {
+          "docs": [
+            {
+              "_id": "6733b0a1e4b0a1a2b3c4d5e1",
+              "firstName": "Ahmed",
+              "lastName": "Cairo",
+              "userName": "Ahmed Cairo",
+              "email": "cairo@troziana.com",
+              "accountStatus": "ACTIVE",
+              "primaryBranchId": "6733b0a1e4b0a1a2b3c4d5b1",
+              "assignedBranchIds": [
+                "6733b0a1e4b0a1a2b3c4d5b1"
+              ],
+              "canAccessAllBranches": false,
+              "jobTitle": "Cairo Branch Manager",
+              "employeeCode": "EMP-CAI-01"
+            }
+          ],
+          "totalDocs": 1,
+          "pagination": {
+            "limit": 20,
+            "page": 1,
+            "totalPages": 1
+          }
+        },
+        "meta": {
+          "totalDocs": 1,
+          "limit": 20,
+          "page": 1,
+          "totalPages": 1
+        }
+      }
+order: 1000

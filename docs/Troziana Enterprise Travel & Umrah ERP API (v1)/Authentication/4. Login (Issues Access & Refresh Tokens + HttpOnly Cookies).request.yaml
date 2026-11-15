@@ -1,0 +1,60 @@
+$kind: http-request
+description: |-
+  Authenticate with email and password; returns JWT tokens, RBAC roles/permissions, and sets HttpOnly cookies
+
+  - **Required Permission:** `Authenticated / Public`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+queryParams:
+  - key: lang
+    value: ar
+    disabled: true
+    description: ""
+body:
+  type: json
+  content: |-
+    {
+      "email": "owner@troziana.com",
+      "password": "Password123!"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 200', function () { pm.response.to.have.status(200); });
+      const json = pm.response.json();
+      pm.test('Standard response envelope', function () {
+        pm.expect(json).to.have.property('success', true);
+        pm.expect(json.data).to.have.property('access_token');
+        pm.expect(json.data).to.have.property('refresh_token');
+      });
+      if (json.data && json.data.access_token) {
+        pm.collectionVariables.set('accessToken', json.data.access_token);
+        pm.environment.set('accessToken', json.data.access_token);
+      }
+      if (json.data && json.data.refresh_token) {
+        pm.collectionVariables.set('refreshToken', json.data.refresh_token);
+        pm.environment.set('refreshToken', json.data.refresh_token);
+      }
+      if (json.data && json.data.user) {
+        pm.collectionVariables.set('userId', json.data.user._id);
+        if (json.data.user.primaryBranchId) pm.collectionVariables.set('branchId', json.data.user.primaryBranchId);
+      }
+    language: text/javascript
+examples: ./.resources/4. Login (Issues Access & Refresh Tokens + HttpOnly Cookies).resources/examples
+order: 4000

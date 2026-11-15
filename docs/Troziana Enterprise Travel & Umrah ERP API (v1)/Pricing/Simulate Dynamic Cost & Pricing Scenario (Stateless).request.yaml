@@ -1,0 +1,70 @@
+$kind: http-request
+description: |-
+  Calculates supervisor share, per-category costs, selling prices, minimum discount floors, and expected profit without saving
+
+  - **Required Permission:** `pricing.read`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/pricing/simulate"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "exchangeRateSarToEgp": 13.5,
+      "groupCapacity": 40,
+      "inputs": {
+        "flightCostPerSeatEgp": 13500,
+        "makkahHotelPerPersonStaySar": {
+          "double": 2000,
+          "triple": 1333.33,
+          "quad": 1000
+        },
+        "madinahHotelPerPersonStaySar": {
+          "double": 1000,
+          "triple": 800,
+          "quad": 600
+        },
+        "saudiAgentFeeSar": 500,
+        "transportCostSar": 300,
+        "barcodeFeeEgp": 3200,
+        "giftsCostEgp": 300,
+        "otherOperationalCostEgp": 500,
+        "supervisorFlightTicketEgp": 13500,
+        "supervisorAccommodationSar": 1600,
+        "supervisorGratuitiesEgp": 4900,
+        "targetProfitMarginPercent": 15,
+        "maxDiscountPercentAllowed": 5
+      }
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("Expected HTTP status 200", function () {
+        pm.response.to.have.status(200);
+      });
+      pm.test("Response has standard JSON structure", function () {
+        if (pm.response.headers.get("Content-Type") && pm.response.headers.get("Content-Type").includes("application/json")) {
+          const body = pm.response.json();
+          pm.expect(body).to.be.an("object");
+          if (body.success !== undefined) pm.expect(body.success).to.equal(true);
+        }
+      });
+    language: text/javascript
+order: 1000

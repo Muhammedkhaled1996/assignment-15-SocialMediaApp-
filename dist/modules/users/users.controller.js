@@ -40,71 +40,40 @@ const express_1 = require("express");
 const authentication_middleware_js_1 = require("../../middleware/authentication.middleware.js");
 const users_services_1 = __importDefault(require("./users.services"));
 const responce_middleware_js_1 = require("../../middleware/responce.middleware.js");
-const multer_middleware_js_1 = require("../../middleware/multer.middleware.js");
-const local_multer_js_1 = require("../../common/utils/multer/local.multer.js");
-const user_repository_js_1 = require("../../common/repository/user.repository.js");
 const validation_middleware_js_1 = require("../../middleware/validation.middleware.js");
 const validator = __importStar(require("./user.validation.js"));
-const multer_enum_js_1 = require("../../common/enum/multer.enum.js");
-const attachment_enum_js_1 = require("../../common/enum/attachment.enum.js");
+const index_js_1 = require("../../common/enum/index.js");
 const router = (0, express_1.Router)({ caseSensitive: true, strict: true });
-router.get("/", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
-    const data = await users_services_1.default.Profile(req.user);
+router.patch("/profile", (0, authentication_middleware_js_1.authentication)(), (0, validation_middleware_js_1.validation)(validator.updateProfile), (0, responce_middleware_js_1.responceFormatter)(async (req) => {
+    const data = await users_services_1.default.updateProfile(req.user, req.validate.body);
     return { data };
 }));
-router.patch("/", (0, authentication_middleware_js_1.authentication)(), (0, validation_middleware_js_1.validation)(validator.update), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
-    const data = await users_services_1.default.update(req.user, req.validate.body);
+router.get("/", (0, authentication_middleware_js_1.authentication)(), (0, authentication_middleware_js_1.authorizeRoles)(index_js_1.UserRole.SUPER_ADMIN, index_js_1.UserRole.ADMIN, index_js_1.UserRole.BRANCH_MANAGER), (0, responce_middleware_js_1.responceFormatter)(async (req) => {
+    const data = await users_services_1.default.listStaffUsers(req.query, req.branchContext);
     return { data };
 }));
-router.patch("/profile-image", (0, authentication_middleware_js_1.authentication)(), (0, multer_middleware_js_1.uploadMiddleware)({
-    isRequired: false,
-    multerMiddleware: (0, local_multer_js_1.localFileUpload)({ maxFileSize: 5, storageApproach: multer_enum_js_1.StorageApproach.MEMORY }).single("image"),
-    customPath: "user",
-    validation: local_multer_js_1.fileValidation.image,
-    storageApproach: attachment_enum_js_1.AttachmentEnum.local,
-}), (0, responce_middleware_js_1.responceFormatter)(async (req, res) => {
-    const files = req.files;
-    const uploadedFile = files && !Array.isArray(files) && files["image"]?.[0]
-        ? files["image"][0]
-        : Array.isArray(files)
-            ? files[0]
-            : req.file;
-    const imagePath = uploadedFile?.finalPath || uploadedFile?.path;
-    if (!imagePath) {
-        throw new Error("No image was uploaded or path is missing");
-    }
-    const userRepository = new user_repository_js_1.UserRepository();
-    const updatedUser = await userRepository.findByIdAndUpdate({
-        id: req.user._id,
-        data: { image: imagePath },
-    });
-    return { data: updatedUser };
+router.post("/", (0, authentication_middleware_js_1.authentication)(), (0, authentication_middleware_js_1.authorizeRoles)(index_js_1.UserRole.SUPER_ADMIN, index_js_1.UserRole.ADMIN), (0, validation_middleware_js_1.validation)(validator.createStaffUser), (0, responce_middleware_js_1.responceFormatter)(async (req) => {
+    const data = await users_services_1.default.createStaffUser(req.validate.body, req.user, req.branchContext);
+    return { status: 201, data };
 }));
-router.post("/follow/:id", (0, authentication_middleware_js_1.authentication)(), (0, validation_middleware_js_1.validation)(validator.followUser), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
-    await users_services_1.default.followUser(req.user._id.toString(), req.validate.params);
-}));
-router.post("/unfollow/:id", (0, authentication_middleware_js_1.authentication)(), (0, validation_middleware_js_1.validation)(validator.followUser), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
-    await users_services_1.default.unFollowUser(req.user._id.toString(), req.validate.params);
-}));
-router.get("/get-pending-follow-requests", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
-    const data = await users_services_1.default.getPendingFollowRequests(req.user._id.toString());
+router.get("/:id", (0, authentication_middleware_js_1.authentication)(), (0, authentication_middleware_js_1.authorizeRoles)(index_js_1.UserRole.SUPER_ADMIN, index_js_1.UserRole.ADMIN, index_js_1.UserRole.BRANCH_MANAGER), (0, validation_middleware_js_1.validation)(validator.userIdParam), (0, responce_middleware_js_1.responceFormatter)(async (req) => {
+    const data = await users_services_1.default.getUserById(req.validate.params.id, req.user, req.branchContext);
     return { data };
 }));
-router.post("/accept-follow-request/:id", (0, authentication_middleware_js_1.authentication)(), (0, validation_middleware_js_1.validation)(validator.followUser), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
-    await users_services_1.default.acceptFollowRequest(req.user._id.toString(), req.validate.params);
-}));
-router.post("/reject-follow-request/:id", (0, authentication_middleware_js_1.authentication)(), (0, validation_middleware_js_1.validation)(validator.followUser), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
-    await users_services_1.default.rejectFollowRequest(req.user._id.toString(), req.validate.params);
-}));
-router.post("/toggle-private", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
-    await users_services_1.default.togglePrivate(req.user._id.toString());
-}));
-router.get("/search", (0, authentication_middleware_js_1.authentication)(), (0, validation_middleware_js_1.validation)(validator.search), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
-    const data = await users_services_1.default.searchUser(req.validate.query, req.user._id.toString());
+router.patch("/:id", (0, authentication_middleware_js_1.authentication)(), (0, authentication_middleware_js_1.authorizeRoles)(index_js_1.UserRole.SUPER_ADMIN, index_js_1.UserRole.ADMIN), (0, validation_middleware_js_1.validation)(validator.updateUser), (0, responce_middleware_js_1.responceFormatter)(async (req) => {
+    const data = await users_services_1.default.updateUser(req.validate.params.id, req.validate.body, req.user, req.branchContext);
     return { data };
 }));
-router.get("/suggestions", (0, authentication_middleware_js_1.authentication)(), (0, responce_middleware_js_1.responceFormatter)(async (req, res, next) => {
-    const data = await users_services_1.default.suggestions(req.user._id.toString());
+router.patch("/:id/role", (0, authentication_middleware_js_1.authentication)(), (0, authentication_middleware_js_1.authorizeRoles)(index_js_1.UserRole.SUPER_ADMIN, index_js_1.UserRole.ADMIN), (0, validation_middleware_js_1.validation)(validator.changeUserRole), (0, responce_middleware_js_1.responceFormatter)(async (req) => {
+    const data = await users_services_1.default.changeUserRole(req.validate.params.id, req.validate.body.roleNumber, req.user, req.validate.body.reason);
+    return { data };
+}));
+router.patch("/:id/reset-password", (0, authentication_middleware_js_1.authentication)(), (0, authentication_middleware_js_1.authorizeRoles)(index_js_1.UserRole.SUPER_ADMIN, index_js_1.UserRole.ADMIN), (0, validation_middleware_js_1.validation)(validator.adminResetPassword), (0, responce_middleware_js_1.responceFormatter)(async (req) => {
+    const data = await users_services_1.default.adminResetPassword(req.validate.params.id, req.validate.body.newPassword, req.user);
+    return { data };
+}));
+router.delete("/:id", (0, authentication_middleware_js_1.authentication)(), (0, authentication_middleware_js_1.authorizeRoles)(index_js_1.UserRole.SUPER_ADMIN, index_js_1.UserRole.ADMIN), (0, validation_middleware_js_1.validation)(validator.userIdParam), (0, responce_middleware_js_1.responceFormatter)(async (req) => {
+    const data = await users_services_1.default.deleteOrDeactivateUser(req.validate.params.id, req.user, req.branchContext);
     return { data };
 }));
 exports.default = router;

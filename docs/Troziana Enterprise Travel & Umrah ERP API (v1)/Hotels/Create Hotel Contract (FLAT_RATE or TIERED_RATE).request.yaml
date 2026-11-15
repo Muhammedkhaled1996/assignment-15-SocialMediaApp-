@@ -1,0 +1,56 @@
+$kind: http-request
+description: |-
+  Creates a hotel contract, computes per-room and per-person stay rates, and posts supplier liability
+
+  - **Required Permission:** `hotels.create`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/hotels/contracts"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "hotelId": "{{hotelId}}",
+      "supplierId": "{{supplierId}}",
+      "city": "MAKKAH",
+      "checkIn": "2027-01-10T00:00:00.000Z",
+      "checkOut": "2027-01-15T00:00:00.000Z",
+      "nights": 5,
+      "roomCapacities": {
+        "doubleRooms": 2,
+        "tripleRooms": 2,
+        "quadRooms": 8
+      },
+      "pricingMode": "FLAT_RATE",
+      "currency": "SAR",
+      "rates": {
+        "flatRoomRatePerNight": 800
+      },
+      "exchangeRateToEgp": 13.5,
+      "paymentTerms": "Full settlement 14 days prior to check-in"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () { pm.response.to.have.status(201); });
+      const json = pm.response.json();
+      if (json.data && json.data._id) pm.collectionVariables.set('hotelContractId', json.data._id);
+    language: text/javascript
+order: 4000

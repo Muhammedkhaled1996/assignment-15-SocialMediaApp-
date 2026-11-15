@@ -1,0 +1,65 @@
+$kind: http-request
+description: |-
+  Computes and saves a versioned pricing matrix for a trip
+
+  - **Required Permission:** `pricing.create`
+  - **Branch Scoped:** `false`
+url: "{{baseUrl}}/api/v1/pricing"
+method: POST
+headers:
+  - key: Accept
+    value: application/json
+  - key: x-branch-id
+    value: "{{branchId}}"
+    description: Active branch context override (validated against user's allowedBranchIds)
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "code": "PRC-RAMADAN-V1",
+      "name": "Ramadan 1448H Standard Pricing V1",
+      "exchangeRateSarToEgp": 13.5,
+      "groupCapacity": 40,
+      "inputs": {
+        "flightCostPerSeatEgp": 13500,
+        "makkahHotelPerPersonStaySar": {
+          "double": 2000,
+          "triple": 1500,
+          "quad": 1000
+        },
+        "madinahHotelPerPersonStaySar": {
+          "double": 1000,
+          "triple": 800,
+          "quad": 600
+        },
+        "saudiAgentFeeSar": 500,
+        "transportCostSar": 300,
+        "barcodeFeeEgp": 3200,
+        "giftsCostEgp": 300,
+        "otherOperationalCostEgp": 500,
+        "supervisorFlightTicketEgp": 13500,
+        "supervisorAccommodationSar": 1600,
+        "supervisorGratuitiesEgp": 4900,
+        "targetProfitMarginPercent": 15,
+        "maxDiscountPercentAllowed": 5
+      }
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Auto-generate fresh Idempotency-Key for safe retry testing
+      pm.collectionVariables.set('idempotencyKey', 'idem-' + Date.now() + '-' + Math.floor(Math.random() * 100000));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status code is 201', function () { pm.response.to.have.status(201); });
+      const json = pm.response.json();
+      if (json.data && json.data._id) pm.collectionVariables.set('pricingVersionId', json.data._id);
+    language: text/javascript
+order: 3000

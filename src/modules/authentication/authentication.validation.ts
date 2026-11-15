@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LanguageEnum, providerEnum, UserRole } from "../../common/enum";
+import { LanguageEnum } from "../../common/enum";
 import { generalValidationFields } from "../../common/utils";
 
 export const loginSchema = (lang: LanguageEnum) => {
@@ -18,31 +18,6 @@ export const login = (lang: LanguageEnum) => {
   });
 };
 
-export const signup = (lang: LanguageEnum) => {
-  return z.object({
-    body: loginSchema(lang)
-      .safeExtend({
-        userName: generalValidationFields.userName(lang),
-        confirmPassword: generalValidationFields.confirmPassword(lang),
-        phone: generalValidationFields.phone(lang),
-        gender: generalValidationFields.gender(lang),
-        role: z.enum(UserRole).optional(),
-        provider:z.enum(providerEnum).optional(),
-      })
-      .superRefine((data, ctx) => {
-        generalValidationFields.matchFields({ original: "password", copy: "confirmPassword", data, ctx, lang });
-
-        if (!data.userName.includes(" ")) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["userName"],
-            message: "userName must includes space between firstName and lastName",
-          });
-        }
-      }),
-  });
-};
-
 export const logoutSchema = (lang: LanguageEnum) => {
   return z.object({
     body: z.strictObject({
@@ -51,41 +26,27 @@ export const logoutSchema = (lang: LanguageEnum) => {
   });
 };
 
-//   .refine(
-//     (data) => {
-//       return data.password == data.confirmPassword;
-//     },
-//     { message: "password mismatch confirmPassword", path: ["confirmPassword"] },
-//   );
-
-export const confirmEmail = (lang: LanguageEnum) => {
-  return z.object({
-    body: z.strictObject({
-      email: generalValidationFields.email(lang),
-      otp: generalValidationFields.otp(lang),
-    }),
-  });
-};
-
-export const resendOtp = (lang: LanguageEnum) => {
-  return z.object({
-    body: z.strictObject({
-      email: generalValidationFields.email(lang),
-    }),
-  });
-};
-
-export const resetPassword = (lang: LanguageEnum) => {
+export const changePassword = (lang: LanguageEnum) => {
   return z.object({
     body: z
       .strictObject({
-        email: generalValidationFields.email(lang),
-        otp: generalValidationFields.otp(lang),
-        password: generalValidationFields.password(lang),
+        currentPassword: z.string().min(1),
+        newPassword: generalValidationFields.password(lang),
         confirmPassword: generalValidationFields.confirmPassword(lang),
       })
       .superRefine((data, ctx) => {
-        generalValidationFields.matchFields({ original: "password", copy: "confirmPassword", data, ctx, lang });
+        generalValidationFields.matchFields({ original: "newPassword", copy: "confirmPassword", data, ctx, lang });
       }),
+  });
+};
+
+export const refreshTokenSchema = (_lang: LanguageEnum) => {
+  return z.object({
+    body: z
+      .object({
+        refreshToken: z.string().optional(),
+        refresh_token: z.string().optional(),
+      })
+      .optional(),
   });
 };

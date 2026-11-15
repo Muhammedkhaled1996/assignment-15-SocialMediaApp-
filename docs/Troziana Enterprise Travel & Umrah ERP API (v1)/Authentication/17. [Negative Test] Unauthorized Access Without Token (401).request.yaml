@@ -1,0 +1,19 @@
+$kind: http-request
+description: Verifies that protected endpoints reject unauthenticated requests with 401 UNAUTHORIZED.
+url: "{{baseUrl}}/api/v1/auth/me"
+method: GET
+headers:
+  Accept: application/json
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Returns 401 Unauthorized when token is missing', function () {
+        pm.response.to.have.status(401);
+        const body = pm.response.json();
+        pm.expect(body.success).to.equal(false);
+        pm.expect(body.code).to.equal('UNAUTHORIZED');
+      });
+    language: text/javascript
+order: 17000
